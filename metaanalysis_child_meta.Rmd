@@ -1,0 +1,17 @@
+```{r}
+d_ERR_wide_ma %>%
+    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+```
+
+Metaanalysis: pooled log(RR)
+
+```{r}
+pooled_logRR <- get_logRR_pooled(d_ERR_wide_ma)
+pooled_logRR
+```
+
+Metanalysis: Pooled ERR = exp(logRR) - 1
+
+```{r}
+predict(pooled_logRR, transf=transf_logRR_to_ERR)
+```

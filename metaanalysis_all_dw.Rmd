@@ -1,0 +1,925 @@
+---
+title: 'UNSCEAR SPCaRT - Metaanalysis - Linda Walsh'
+subtitle: 'All Sites'
+author: 'Daniel Wollschläger'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  pdf_document: 
+    number_sections: yes
+    keep_tex: no
+    fig_crop: no
+---
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,
+                      tidy=FALSE,
+                      message=FALSE,
+                      warning=FALSE,
+                      comment=NA,
+                      crop=FALSE,
+                      fig_crop=FALSE)
+
+options(replace.assign=TRUE,
+        width=75,
+        digits=4,
+        useFancyQuotes=FALSE,
+        show.signif.stars=FALSE,
+        scipen=999)
+
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+```
+
+```{r echo=FALSE}
+#####---------------------------------------------------------------------------
+#####---------------------------------------------------------------------------
+## load packages
+## read data
+#####---------------------------------------------------------------------------
+#####---------------------------------------------------------------------------
+
+library(dplyr)
+library(ggplot2)
+
+source("metaanalysis_global.R")
+```
+
+```{r eval=FALSE}
+library(readxl)
+
+#####---------------------------------------------------------------------------
+## run this chunk by hand for reading in data
+#####---------------------------------------------------------------------------
+
+#####---------------------------------------------------------------------------
+## read in data for different cancer sites
+excel_file   <- "SPCaRT_Chapter5_Epidemiology_incomplete first draft_TABLES_08.07.2022.xlsx"
+excel_sheets <- list(Haem_Lymph="Tab_5_B_2_Haem_Lymph_meta",
+                     Sarcoma   ="Tab_5_B_3_Sarcoma_meta",
+                     Breast    ="Tab_5_B_4_Breast_meta",
+                     Lung      ="Tab_5_B_5_Lung_meta",
+                     Gastro    ="Tab_5_B_6_Gastro_meta",
+                     Thyroid   ="Tab_5_B_7_Thyroid_meta",
+                     Brain     ="Tab_5_B_8_Brain_meta")
+
+d_RR0_allL <- Map(function(s) { read_xlsx(excel_file, sheet=s) }, excel_sheets)
+
+#####---------------------------------------------------------------------------
+## remove studies with overlapping data
+overlappingL <- list(Haem_Lymph=c(),
+                     Sarcoma   =c(),
+                     Breast    =c("{Inskip, 2009, 19620485}",      # overlap Veiga 2019
+                                  "{Schonfeld, 2020, 31794291}",   # overlap Veiga 2019
+                                  "{van Leeuwen, 2003, 12837833}", # overlap Travis 2003
+                                  "{Rubino, 2003, 12942115}"),     # overlap Guibout 2005
+                     Lung      =c(),
+                     Gastro    =c(),
+                     Thyroid   =c(),
+                     Brain     =c())
+
+d_RR0_selL <- Map(function(x, y) { x %>% filter(!(Reference %in% y)) },
+                  d_RR0_allL, overlappingL)
+
+#####---------------------------------------------------------------------------
+## fill in missing information such as CI boundaries, reference doses
+## thyroid: downturn in dose-response at high doses -> set threshold
+dose_thresh_thyroid <- 10
+
+d_RR_allL <- Map(rr_impute_missing, d_RR0_allL)
+d_RR_selL <- Map(rr_impute_missing, d_RR0_selL)
+
+d_RR_allL$Thyroid <- d_RR_allL$Thyroid %>%
+    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
+
+d_RR_selL$Thyroid <- d_RR_selL$Thyroid %>%
+    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
+
+#####---------------------------------------------------------------------------
+## save to file
+saveRDS(d_RR0_allL, file="d_RR0_allL.rda")
+saveRDS(d_RR0_selL, file="d_RR0_selL.rda")
+saveRDS(d_RR_allL,  file="d_RR_allL.rda")
+saveRDS(d_RR_selL,  file="d_RR_selL.rda")
+```
+
+```{r eval=FALSE}
+#####---------------------------------------------------------------------------
+## run this chunk by hand to re-do estimating ERR/Gy + CI from category RRs
+#####---------------------------------------------------------------------------
+
+n_repl <- 1000
+
+d_RR0_selL <- readRDS("d_RR0_selL.rda")
+d_RR_allL  <- readRDS("d_RR_allL.rda")
+d_RR_selL  <- readRDS("d_RR_selL.rda")
+
+d_ERR_allL <- Map(get_all_ERR_from_RR, d_RR_allL, n_repl=n_repl)
+## TODO: unnecessary duplication
+d_ERR_selL <- Map(get_all_ERR_from_RR, d_RR_selL, n_repl=n_repl)
+
+saveRDS(d_ERR_allL, file="d_ERR_allL.rda")
+saveRDS(d_ERR_selL, file="d_ERR_selL.rda")
+
+#####---------------------------------------------------------------------------
+## sensitivity: different dose thresholds for thyroid
+#####---------------------------------------------------------------------------
+
+## 5 Gy
+dose_thresh_thyroid <- 5
+d_RR_sel <- rr_impute_missing(d_RR0_selL$Thyroid) %>%
+    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
+
+d_ERR_selL <- get_all_ERR_from_RR(d_RR_sel, n_repl=n_repl)
+saveRDS(d_ERR_selL$d_ERR_wide,
+        file=paste0("d_ERR_thyroid_thresh",
+                    sprintf("%.2d", dose_thresh_thyroid), "_sel_wide.rda"))
+
+## 20 Gy
+dose_thresh_thyroid <- 20
+d_RR_sel <- rr_impute_missing(d_RR0_selL$Thyroid) %>%
+    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
+
+d_ERR_selL <- get_all_ERR_from_RR(d_RR_sel, n_repl=n_repl)
+saveRDS(d_ERR_selL$d_ERR_wide,
+        file=paste0("d_ERR_thyroid_thresh",
+                    sprintf("%.2d", dose_thresh_thyroid), "_sel_wide.rda"))
+```
+
+```{r}
+#####---------------------------------------------------------------------------
+## load previously generated data and estimates
+#####---------------------------------------------------------------------------
+
+d_RR_allL  <- readRDS("d_RR_allL.rda")
+d_RR_selL  <- readRDS("d_RR_selL.rda")
+d_ERR_allL <- readRDS("d_ERR_allL.rda")
+d_ERR_selL <- readRDS("d_ERR_selL.rda")
+
+#####---------------------------------------------------------------------------
+#####---------------------------------------------------------------------------
+```
+
+**CAVE** "RR" here may refer to RR, OR, HR
+
+# Methods
+## ERR/Gy from category-specific RRs + CIs
+
+  * Approach as in: Doi et al. 2014: https://doi.org/10.1093/jrr/rru045
+  * However, modified step of estimating ERR/Gy based on category-specific RRs.
+      * Instead of weighted linear regression with least squares following Little 2001: (https://doi.org/10.1080/09553000010022634) use weighted generalized least squares regression to take into account correlated category RRs, assuming homogeneous correlation matrix with off-diagonal 0.5 per study (based on quick simulation study) following Berrington and Cox. 2003. https://doi.org/10.1093/biostatistics/4.3.423
+
+## Metaanalysis
+
+  * ERRs as given in the publication (if available) or as estimated from category RRs (preferred: gls approach, uncorrelated approach if gls does not converge)
+  * SE of log(ERR) derived from CI width assuming log-normality
+  * Metaanalysis uses log(ERR+1) as input together with SE on log scale for weighting
+  * Metaanalysis results are back-transformed using exp(logRR) - 1
+
+## Sensitivity: Synthetic single ERR estimate from all studies with category RRs
+
+  * Use all per-study category RRs in a single generalized least squares regression model
+  * Within-study RRs: assume homogeneous correlation matrix with off-diagonal 0.5
+  * Assume no correlation between study RRs
+  * Random effects metaanalysis using synthetic single estimate from category-RR-only studies and studies with ERR/Gy
+
+# Haematopoetic / Lymph
+
+```{r}
+d_RR_all     <- d_RR_allL$Haem_Lymph
+d_RR_sel     <- d_RR_selL$Haem_Lymph
+d_ERR_all_lw <- d_ERR_allL$Haem_Lymph
+d_ERR_sel_lw <- d_ERR_selL$Haem_Lymph
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+                  color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 30)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+```{r fig.height=8}
+d_ERR_plot <- d_ERR_long
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_plot,
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 30)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position="bottom")
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-0.5, 13)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+# Sarcoma
+
+```{r}
+d_RR_all     <- d_RR_allL$Sarcoma
+d_RR_sel     <- d_RR_selL$Sarcoma
+d_ERR_all_lw <- d_ERR_allL$Sarcoma
+d_ERR_sel_lw <- d_ERR_selL$Sarcoma
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+                  color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 80)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+```{r fig.height=8}
+d_ERR_plot <- d_ERR_long
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_plot,
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 80)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position=c(0.85, 0.12))
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-1.2, 23)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+# Breast
+
+```{r}
+d_RR_all     <- d_RR_allL$Breast
+d_RR_sel     <- d_RR_selL$Breast
+d_ERR_all_lw <- d_ERR_allL$Breast
+d_ERR_sel_lw <- d_ERR_selL$Breast
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel,
+       aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+           color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 10)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+Note: For Veiga 2019, ERR derived from OR/10 Gy is plotted.
+
+```{r fig.height=8}
+d_ERR_Veiga <- d_RR_sel %>%
+    filter(auth_year == "Veiga_2019") %>%
+    mutate(ERR     =RR-1,
+           ERR_CIlo=RR_CIlo-1,
+           ERR_CIup=RR_CIup-1,
+           from="org") %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    slice(1)
+
+d_ERR_sub <- d_ERR_long %>%
+    filter(!((auth_year == "Veiga_2019") & (from == "org")))
+
+d_ERR_plot <- bind_rows(d_ERR_sub, d_ERR_Veiga)
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=bind_rows(d_ERR_sub, d_ERR_Veiga),
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 15)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position=c(0.85, 0.12))
+```
+
+Only Svahn-Tapper 2006 (off the charts)
+
+```{r}
+d_ERR_ribbon_ST2006 <- d_ERR_ribbon %>%
+    filter(auth_year == "Svhn-Tp_2006")
+
+d_ERR_long_ST2006 <- d_ERR_long %>%
+    filter(auth_year == "Svhn-Tp_2006")
+
+d_RR_ST2006 <- d_RR_sel %>%
+    filter(auth_year == "Svhn-Tp_2006")
+
+ggplot(d_RR_ST2006) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon_ST2006,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_long_ST2006,
+                aes(intercept=1, slope=ERR, color=from)) +
+    geom_abline(data=d_RR_ST2006,
+                aes(intercept=0, slope=RR)) +
+    coord_cartesian(ylim=c(0, 100)) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    facet_grid(~ auth_year) +
+    ggpt +
+    theme(legend.position="bottom")
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-1, 4.5)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+# Lung
+
+```{r}
+d_RR_all     <- d_RR_allL$Lung
+d_RR_sel     <- d_RR_selL$Lung
+d_ERR_all_lw <- d_ERR_allL$Lung
+d_ERR_sel_lw <- d_ERR_selL$Lung
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+                  color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 20)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+```{r fig.height=8}
+d_ERR_plot <- d_ERR_long
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_plot,
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 15)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position="bottom")
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-0.2, 2.5)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+# Gastro
+
+```{r}
+d_RR_all     <- d_RR_allL$Gastro
+d_RR_sel     <- d_RR_selL$Gastro
+d_ERR_all_lw <- d_ERR_allL$Gastro
+d_ERR_sel_lw <- d_ERR_selL$Gastro
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+                  color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 10)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+```{r fig.height=8}
+d_ERR_plot <- d_ERR_long
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_plot,
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 15)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position="bottom")
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-0.2, 2.5)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+# Thyroid
+
+```{r}
+d_RR_all     <- d_RR_allL$Thyroid
+d_RR_sel     <- d_RR_selL$Thyroid
+d_ERR_all_lw <- d_ERR_allL$Thyroid
+d_ERR_sel_lw <- d_ERR_selL$Thyroid
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis - dose threshold 10 Gy
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+                  color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 10)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+```{r fig.height=8}
+d_ERR_plot <- d_ERR_long
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_plot,
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 15)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position=c(0.85, 0.12))
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-1.2, 20)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+## Dose threshold 5 Gy
+
+```{r}
+dose_thresh <- 5
+d_ERR_wide <- readRDS(paste0("d_ERR_thyroid_thresh",
+                             sprintf("%.2d", dose_thresh), "_sel_wide.rda"))
+
+d_ERR_wide_ma <- d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used     =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
+           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+## Dose threshold 20 Gy
+
+```{r}
+dose_thresh <- 20
+d_ERR_wide <- readRDS(paste0("d_ERR_thyroid_thresh",
+                             sprintf("%.2d", dose_thresh), "_sel_wide.rda"))
+
+d_ERR_wide_ma <- d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used     =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
+           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+# Brain
+
+```{r}
+d_RR_all     <- d_RR_allL$Brain
+d_RR_sel     <- d_RR_selL$Brain
+d_ERR_all_lw <- d_ERR_allL$Brain
+d_ERR_sel_lw <- d_ERR_selL$Brain
+d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
+d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
+```
+
+## Primary analysis
+### Category RR + CIs
+
+```{r fig.height=6}
+ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
+                  color=auth_year)) +
+    geom_point() +
+    geom_linerange() +
+    coord_cartesian(ylim=c(0, 60)) +
+    xlab("Dose [Gy]") +
+    ylab("RR category") +
+    ggpt +
+    theme(legend.position="bottom",
+          legend.title=element_blank())
+```
+
+### Estimated per-study ERR + CIs with category RR + CIs
+
+```{r fig.height=8}
+# d_ERR_Finke <- d_RR_sel %>%
+#     filter(auth_year == "Finke_2015") %>%
+#     mutate(ERR     =RR-1,
+#            ERR_CIlo=RR_CIlo-1,
+#            ERR_CIup=RR_CIup-1,
+#            from="org") %>%
+#     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+#     slice(1)
+# 
+# d_ERR_sub <- d_ERR_long %>%
+#     filter(!((auth_year == "Finke_2015") & (from == "org")))
+# 
+# d_ERR_plot <- bind_rows(d_ERR_sub, d_ERR_Finke)
+d_ERR_plot <- d_ERR_long
+
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+                                    length.out=2))
+
+d_ERR_ribbon <- d_ERR_plot %>%
+    full_join(d_ribbon, by=character()) %>%
+    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
+           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
+
+ggplot(d_RR_sel) +
+    geom_point(aes(x=d_kPrime, y=RR_cat)) +
+    geom_linerange(aes(x=d_kPrime, y=RR_cat,
+                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
+    geom_ribbon(data=d_ERR_ribbon,
+                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
+                    color=from, fill=from), alpha=0.3, linetype=0) +
+    geom_abline(data=d_ERR_plot,
+                aes(intercept=1, slope=ERR, color=from)) +
+    coord_cartesian(ylim=c(0, 60)) +
+    facet_wrap(~ auth_year) +
+    xlab("Dose [Gy]") +
+    ylab("RR") +
+    ggpt +
+    theme(legend.position=c(0.85, 0.12))
+```
+
+### Estimated ERR + CIs with original ERR + CIs
+
+```{r results="asis"}
+d_ERR_long %>%
+    select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
+    knitr::kable(booktabs=TRUE)
+```
+
+```{r fig.height=6}
+ggplot(d_ERR_plot,
+       aes(x=auth_year, y=ERR,
+           group=from,
+           color=from,
+           shape=from,
+           ymin=ERR_CIlo,
+           ymax=ERR_CIup)) +
+    geom_point(position=position_dodge(width=0.75)) +
+    geom_linerange(position=position_dodge(width=0.75)) +
+    xlab(NULL) +
+    coord_flip(ylim=c(-0.1, 15)) +
+    ggpt +
+    theme(legend.position=c(0.9, 0.2))
+```
+
+### Metaanalysis
+
+```{r, child='metaanalysis_child_primary_meta.Rmd'}
+```
+
+## Sensitivity Analyses
+
+```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```

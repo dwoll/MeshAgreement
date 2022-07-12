@@ -1,0 +1,106 @@
+---
+title: 'UNSCEAR SPCaRT - Metaanalysis - Linda Walsh'
+subtitle: 'TODO'
+author: 'Daniel Wollschläger'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    number_sections: yes
+    keep_tex: no
+    fig_crop: no
+---
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,
+                      tidy=FALSE,
+                      message=FALSE,
+                      warning=FALSE,
+                      comment=NA)
+
+options(replace.assign=TRUE,
+        width=75,
+        digits=4,
+        useFancyQuotes=FALSE,
+        show.signif.stars=FALSE,
+        scipen=999)
+
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+```
+
+# Documentation of Methods
+
+  * Prefer adjusted over unadjusted models
+  * No pooling of linear-exponential, quadratic, linear-quadratic models
+  * Use ERR SD if provided when ERR 95% CI not provided
+
+# All Sites
+
+  * Implement Richardson et al. 2020 Metaanalysis Methods (https://doi.org/10.1007/s00411-020-00863-w)
+  * Investigate bias when estimating ERR/Gy from dose-category-specific RRs due to uncertainty in category representative (mean) dose? (suggestion David P)
+      * Compare ERR/Gy estimates from dose-category-specific RRs to original ERR/Gy from same studies
+      * For studies with know per-category mean dose, compare to results from choosing boundary mid-points
+      * Impact on metaanalysis results?
+  * Incorporate ERR/Gy estimates from dose-category-specific RRs in metaanalysis with extra *variance component* or similar? (suggestion David P) (currently: sensitivity analysis without these studies)
+  * How to deal with fractionation? (suggestion David P)
+
+# Haematopoetic_Lymph
+
+  * Consider non-linearity in dose-response (linear-exponential models used)
+  * Storm 1985: No CI -> out
+  * Lönn 2010: Only IRR, take ABM dose? (20 Gy, Table 1)
+  * Lönn 2010: Use IRR for external and brachy? Separate also available
+  * Boice 1988: Category RRs are given separately for AL+CML, NHL, MM. Take all of these?
+  * Murohashi 1985: No RRs -> out
+  * Tucker 1987: No CIs -> out (how did Allodji 2020 do it?)
+  * Blettner 1991: Category RR+CIs provided to DW for previous project (personal communication)
+  * Allard 2010: ERR model only linear exponential -> out
+  * Holowaty 1995: Category RRs are given separately for ANLL, NCLL. Take all of these?
+  * Allodji 2020: Include at all? If so, ERR/Gy for patients without chemotherapy or with chemotherapy?
+  * Sensitivity: No overlapping data
+
+# Sarcoma
+
+  * Le Vu 1998: Table VIII states ERR/Gy = 3.1 (SD 4.5) after adjusting for electrophilic agents, yet abstract and page 372 right bottom state 1.8 (SD 2.2) as in Excel table
+  * Kuttesch 1996: No category RRs or ERR/Gy, but "include in metaanalysis = yes"?
+  * Schwartz 2014: ORs are currently used, but HRs are also available
+  * Wong 1997: Results for all sarcomas combined are currently used, but STS only also available
+  * Sensitivity: No overlapping data
+
+# Breast
+
+  * -
+
+# Lung
+
+  * Grantzau 2014: Category RRs for >= 5 years treatment lag are currently used, other lags available
+  * Inskip 2009: Category RRs for average dose to affected lung is currently used, but average dose to both lungs also available
+  * Inskip 2009: Note that ERR/Gy 0.2 (-0.62, 1.03) is given in Table 4 (not in Excel table but in text)
+  * Lönn 2010: IRR for external and brachy is currently used, separate also available
+  * Ng 2002: No mean dose for overall RR -> out
+  * Taylor 2017: Based on whole lung dose -> need to discuss what dose is used in other studies, how to handle Inskip 2009
+  * Sensitivity: No overlapping data
+
+# Gastro
+
+  * Boice 1988: Include all cancer sites? Category RRs only documented for Stomach, Colon, Rectum, but Pancreas also available
+  * de Vathaire 1997: No absorbed dose -> out
+  * Lönn 2010: Include all cancer sites?
+  * Lönn 2010: IRR for external and brachy is currently used, separate also available
+  * Morton 2012: Note that EOR/Gy is provided as = 0.09, 95% CI 0.04–0.16, but not in Excel table
+  * Ng 2002: No mean dose for overall RR -> out
+  * Rubino 2003: No absorbed dose -> out
+  * Morton 2014 Oesophagus not included? (https://doi.org/10.3324/haematol.2014.108258)
+  * Nottage 2012: Is the EOR 1.3 (95% CI -0.5, 3.1, Table 2) really a linear EOR/Gy?
+  * Sensitivity: No overlapping data
+
+# Thyroid
+
+  * Ronckers 2006: Use ERR/Gy that was fitted to data < 6 Gy? (1.3 (95% CI:0.4–4.1))
+  * Sensitivity: No overlapping data
+
+# Brain
+
+  * Little 1998: Results for all brain cancer, ok?
+  * Neglia 2006: Results for all brain cancer, ok?
+  * Taylor 2010: Results for meningioma, ok?
+  * Svahn-Tapper 2006: ERR/Gy = 0.14 (not 0.1 as in table), see page 443 right, last sentence Results

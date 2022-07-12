@@ -1,0 +1,105 @@
+### Linear uncorrelated model (Little 2001)
+
+Relevant for studies with only category-specific RRs
+
+```{r}
+d_ERR_wide_ma <- d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used     =get_used(ERR_org, rep(NA_real_, n()), ERR_lm),
+           ERR      =coalesce(ERR_org,       ERR_lm),
+           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_lm),
+           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_lm),
+           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_lm))
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+### Synthetic single ERR estimate from all studies with category RRs
+
+```{r}
+d_ERR_from_RRs <- get_single_ERR_from_RRs(d_RR_sel, cor_intra=0.5, CI_width=0.95)
+```
+
+```{r}
+## pool estimates
+d_ERR_org <- d_ERR_wide %>%
+    filter(!is.na(ERR_org)) %>%
+    mutate(ERR      =ERR_org,
+           ERR_CIlo =ERR_CIlo_org,
+           ERR_CIup =ERR_CIup_org,
+           ERR_logSE=ERR_logSE_org,
+           used="org")
+
+d_ERR_wide_ma <- bind_rows(d_ERR_org, d_ERR_from_RRs)
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+### Pooled ERR on original scale (gls)
+
+```{r}
+d_ERR_wide_ma <- d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used     =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
+           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+```
+
+```{r}
+d_ERR_wide_ma %>%
+    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE, used)
+```
+
+Metaanalysis: pooled ERR
+
+```{r}
+pooled_ERR <- get_ERR_pooled(d_ERR_wide_ma)
+pooled_ERR
+```
+
+### Use all studies, including overlapping data
+
+Also including studies
+
+```{r}
+setdiff(d_RR_all$auth_year,
+        d_RR_sel$auth_year)
+```
+
+```{r}
+d_ERR_wide_ma <- d_ERR_all_lw$d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used     =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
+           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm)) %>%
+    select(auth_year, ERR, ERR_CIlo, ERR_CIup, CI_width_ERR, ERR_logSE, used)
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+### Use only studies with original ERR/Gy
+
+```{r}
+d_ERR_wide_ma <- d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used     =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
+           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm)) %>%
+    filter(used == "org") %>%
+    select(auth_year, ERR, ERR_CIlo, ERR_CIup, CI_width_ERR, ERR_logSE, used)
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
