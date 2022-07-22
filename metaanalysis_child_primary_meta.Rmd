@@ -1,15 +1,22 @@
 ```{r}
+meta_type <- "primary"
+
 d_ERR_wide_ma <- d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+           used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm))
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+Funnel plot
+
+```{r fig.height=3.5}
+funnel(pooled_logRR, atransf=transf_logRR_to_ERR)
 ```
 
 Forest plot

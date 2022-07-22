@@ -21,7 +21,6 @@
 library(ggplot2)
 library(dplyr)
 library(boot)
-library(ggplot2)
 library(metafor)
 library(nlme)
 library(mvtnorm)
@@ -110,12 +109,18 @@ get_ERR_logSE_from_CI <- function(CIlo, CIup, CI_width) {
     log((CIup+1) / (CIlo+1)) / (2*qnorm((1-CI_width)/2, lower.tail=FALSE))
 }
 
+## collapse whitespace into one space
+collapse_ws <- function(x)  {
+    gsub("[[:blank:]]+", " ", x)
+}
+
 ## prepare RR data
 ## fill in missing information such as CI boundary, category reference dose
 rr_impute_missing <- function(x) {
     x %>%
         mutate(## generate shorter publication ID
                Reference=trimws(Reference, which="both"),
+               Reference=collapse_ws(Reference),
                pub_author=gsub("^\\{([[:alpha:] -_]+), [[:digit:]]{4}, [[:digit:]]+\\}$", "\\1", Reference),
                pub_year  =gsub("^\\{[[:alpha:] -_]+, ([[:digit:]]{4}), [[:digit:]]+\\}$", "\\1", Reference),
                auth_year =paste(abbreviate(pub_author, minlength=7, strict=TRUE),
@@ -384,9 +389,9 @@ get_all_ERR_from_RR <- function(x, n_repl=1000, cor_intra=0.5) {
     d_ERR_wide <- d_ERR_long %>%
         as.data.frame() %>%
         reshape(direction="wide",
-                idvar=c("auth_year", "CI_width_ERR"),
+                idvar=c("auth_year"),
                 timevar="from",
-                v.names=c("ERR", "ERR_CIlo", "ERR_CIup",
+                v.names=c("ERR", "ERR_CIlo", "ERR_CIup", "CI_width_ERR",
                           "ERR_SE", "ERR_SE2",
                           "ERR_logSE", "ERR_logSE2",
                           "ERR_SE_meta"),
@@ -445,6 +450,10 @@ get_single_ERR_from_RRs <- function(x, cor_intra=0.5, CI_width=0.95) {
                                    ERR_logSE),
                CI_width_ERR=CI_width,
                used=used)
+}
+
+try_get <- function(x) {
+    if(exists(x)) { get(x) }
 }
 
 #####---------------------------------------------------------------------------

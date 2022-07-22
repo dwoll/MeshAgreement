@@ -8,9 +8,9 @@
 library(dplyr)
 library(parallel)
 
-source("metaanalysis_global_cl.R")
+source("metaanalysis_global.R")
 
-n_repl  <- 2000
+n_repl  <- 200
 n_cores <- min(10, parallel::detectCores()-2)
 
 d_RR0_selL <- readRDS("d_RR0_selL.rda")
@@ -38,10 +38,12 @@ clusterExport(cl,
 				"get_ERR_correlated",
 				"get_ERR_CI",
 				"get_ERR_from_ORRRSIRIRR",
+				"lognorm_org_to_log",
+				"lognorm_log_to_org",
 				"rr_impute_missing",
 				"impute_highest_cat"))
 
-# d_ERR_allL <- lapply(d_RR_allL, get_all_ERR_from_RR, n_repl=n_repl)
+# d_ERR_allL <- lapply(d_RR_allL[1], get_all_ERR_from_RR, n_repl=n_repl)
 d_ERR_allL <- parLapply(cl, d_RR_allL, get_all_ERR_from_RR, n_repl=n_repl)
 d_ERR_selL <- parLapply(cl, d_RR_selL, get_all_ERR_from_RR, n_repl=n_repl)
 

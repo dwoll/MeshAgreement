@@ -1,17 +1,47 @@
-```{r}
-d_ERR_wide_ma %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
-```
-
 Metaanalysis: pooled log(RR)
 
 ```{r}
 pooled_logRR <- get_logRR_pooled(d_ERR_wide_ma)
+ma_weights   <- weights(pooled_logRR)
+d_ma_weights <- data.frame(auth_year=names(ma_weights),
+                           weight=unname(ma_weights))
+
+d_ERR_out <- d_ERR_wide_ma %>%
+    mutate(site=cancer_site) %>%
+    left_join(d_ma_weights, by="auth_year") %>%
+    select(site, auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, weight, used) %>%
+    rename(ERR_SE=ERR_SE_meta)
+
+if(meta_type != "special") { d_ERR_out %>% select(-site) }
 pooled_logRR
 ```
 
 Metanalysis: Pooled ERR = exp(logRR) - 1
 
 ```{r}
-predict(pooled_logRR, transf=transf_logRR_to_ERR)
+ci_pred <- predict(pooled_logRR, transf=transf_logRR_to_ERR, pi.type="t")
+ci_pred
+```
+
+```{r}
+## save results for combined table / figure
+## input ERR only from primary analysis
+if(meta_type == "primary") {
+    assign(paste0("d_ERR_site_", cancer_site), d_ERR_out)
+}
+
+assign(paste0("d_meta_", cancer_site, "_", meta_type),
+       data.frame(site=cancer_site,
+                  type=meta_type,
+                  tau2=pooled_logRR$tau2,
+                  # tau2_se=pooled_logRR$se.tau2,
+                  I2=pooled_logRR$I2,
+                  H2=pooled_logRR$H2,
+                  Q=pooled_logRR$QE,
+                  Q_pval=pooled_logRR$QEp,
+                  ERR=ci_pred$pred,
+                  ERR_CIlo=ci_pred$ci.lb,
+                  ERR_CIup=ci_pred$ci.ub,
+                  ERR_PIlo=ci_pred$pi.lb,
+                  ERR_PIup=ci_pred$pi.ub))
 ```

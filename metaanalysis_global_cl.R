@@ -6,14 +6,13 @@
 ## Doi et al. 2014. https://doi.org/10.1093/jrr/rru045
 ## and
 ## Berrington and Cox. 2003. https://doi.org/10.1093/biostatistics/4.3.423
+## Richardson et al. 2020. https://doi.org/10.1007/s00411-020-00863-w
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 ## TODO
-## Treatment of RR/Gy from log-linear models -> evaluate at 100 mGy
-##
 ## correlation between category RRs currently set to 0.5
 ## (based on simple simulation) for gls() estimates -> keep?
 #####---------------------------------------------------------------------------
@@ -68,31 +67,38 @@ impute_highest_cat <- function(d_k1, lo, up) {
     d_k2
 }
 
+## recover standard error of point estimate from CI boundaries
+## TODO: implement Richardson et al. 2020
+## RR: assuming normal Wald CI on linear scale
 get_RR_SE_from_CI <- function(CIlo, CIup, CI_width) {
     (CIup - CIlo)            / (2*qnorm((1-CI_width)/2, lower.tail=FALSE))
 }
 
+## ERR: assuming normal Wald CI on linear scale
 get_ERR_SE_from_CI <- function(CIlo, CIup, CI_width) {
     ((CIup+1) - (CIlo+1))    / (2*qnorm((1-CI_width)/2, lower.tail=FALSE))
 }
 
-get_ERR_logSE_from_CI <- function(CIlo, CIup, CI_width) {
-    log((CIup+1) / (CIlo+1)) / (2*qnorm((1-CI_width)/2, lower.tail=FALSE))
-}
-
+## RR: assuming normal Wald CI on log scale (log-normal)
 get_RR_logSE_from_CI <- function(CIlo, CIup, CI_width) {
     log(CIup / CIlo)         / (2*qnorm((1-CI_width)/2, lower.tail=FALSE))
 }
 
+## ERR: assuming normal Wald CI on log scale (log-normal)
+get_ERR_logSE_from_CI <- function(CIlo, CIup, CI_width) {
+    log((CIup+1) / (CIlo+1)) / (2*qnorm((1-CI_width)/2, lower.tail=FALSE))
+}
+
 ## prepare RR data
-## fill in missing information such as CI boundary, reference dose
+## fill in missing information such as CI boundary, category reference dose
 rr_impute_missing <- function(x) {
     x %>%
-        mutate(Reference=trimws(Reference, which="both"),
+        mutate(## generate shorter publication ID
+               Reference=trimws(Reference, which="both"),
                pub_author=gsub("^\\{([[:alpha:] -_]+), [[:digit:]]{4}, [[:digit:]]+\\}$", "\\1", Reference),
                pub_year  =gsub("^\\{[[:alpha:] -_]+, ([[:digit:]]{4}), [[:digit:]]+\\}$", "\\1", Reference),
-               auth_year=paste(abbreviate(pub_author, minlength=7, strict=TRUE),
-                               pub_year, sep="_"),
+               auth_year =paste(abbreviate(pub_author, minlength=7, strict=TRUE),
+                                pub_year, sep="_"),
                ## set representative dose for dose category if none is given
                dose_catUp=as.numeric(dose_catUp),  # may be character due to "Inf"
                d_k1=if_else(is.na(d_k) & !is.infinite(dose_catUp),
@@ -116,12 +122,12 @@ rr_impute_missing <- function(x) {
                                 exp(log(ERR+1) - (log(ERR_CIup+1)-log(ERR+1))) - 1,
                                 as.numeric(ERR_CIlo)),
                ## for regression to estimate ERR/Gy from category RRs
-               ## inverse-variance weighting -> weights w
                ## assuming log-normal distribution of RR
                RR_cat_logSE =get_RR_logSE_from_CI(RR_cat_CIlo, RR_cat_CIup, CI_width_RR),
                RR_cat_logSE2=RR_cat_logSE^2,
                ## variance on original scale
-               RR_cat_var=exp(RR_cat_logSE)^2,
+               RR_cat_SE2=lognorm_log_to_org(log(RR_cat), RR_cat_logSE)$sigma^2,
+               ## weight for Little 2001 linear regressions
                w=1/RR_cat_logSE2,
                ## offset for Little 2001 linear regression
                off=1) %>%
@@ -186,7 +192,7 @@ get_ERR <- function(x, return_fit=FALSE) {
 ## use varFixed() and lmeControl(sigma=1) to use estimated variances
 get_ERR_correlated <- function(x, return_fit=FALSE, cor_intra=0.5) {
     ## alternative approach
-    # vfFixed  <- varFixed(~ RR_cat_var)
+    # vfFixed  <- varFixed(~ RR_cat_SE2)
     # vfFixedI <- initialize(vfFixed, data=x)
     # varWeights(vfFixedI)
     ## gls() cannot deal with offset() term
@@ -195,7 +201,7 @@ get_ERR_correlated <- function(x, return_fit=FALSE, cor_intra=0.5) {
     fit_ERR <- try(gls(RR_cat_m1 ~ d_kPrime - 1,
                        correlation=corCompSymm(value=cor_intra, form=~ 1),
                        weights=varFixed(~ RR_cat_logSE2), # variance proportional to logSE^2
-                       # weights=varFixed(~ RR_cat_var),  # variance equal to RR_cat_var
+                       # weights=varFixed(~ RR_cat_SE2),  # variance equal to ~ RR_cat_SE2
                        # control=lmeControl(sigma=1),     # needed when using "variance equal to"
                        data=x))
     
@@ -240,7 +246,7 @@ get_ERR_CI <- function(x,
     ## proceed only if category RRs and variance weights are available
     x_sub <- x %>%
         select(auth_year,
-               d_kPrime, RR_cat, RR_cat_logSE, RR_cat_logSE2, RR_cat_var,
+               d_kPrime, RR_cat, RR_cat_logSE, RR_cat_logSE2, RR_cat_SE2,
                off, w) %>%
         na.omit()
     
@@ -341,10 +347,17 @@ get_all_ERR_from_RR <- function(x, n_repl=1000, cor_intra=0.5) {
     
     ## combine and calculate SE assuming normality or log-normality of RR
     d_ERR_long <- bind_rows(d_ERR_org, d_ERR_lm, d_ERR_gls) %>%
-        mutate(ERR_SE    = get_ERR_SE_from_CI(ERR_CIlo, ERR_CIup, CI_width_ERR),
+        mutate(ERR_SE    =get_ERR_SE_from_CI(ERR_CIlo, ERR_CIup, CI_width_ERR),
                ERR_SE2   =ERR_SE^2,
                ERR_logSE =get_ERR_logSE_from_CI(ERR_CIlo, ERR_CIup, CI_width_ERR),
-               ERR_logSE2=ERR_logSE^2)
+               ERR_logSE2=ERR_logSE^2,
+               ## ERR_logSE may not be available when lower CI bound < -1
+               ## -> take log(SE) instead
+               ## note: introduces bias as get_ERR_SE_from_CI() assumes
+               ## normality (symmetry on linear scale)
+               ERR_SE_meta=if_else(is.na(ERR_logSE),
+                                   lognorm_org_to_log(ERR+1, ERR_SE)$sdlog,
+                                   ERR_logSE))
     
     ## reshape to wide format
     d_ERR_wide <- d_ERR_long %>%
@@ -354,7 +367,8 @@ get_all_ERR_from_RR <- function(x, n_repl=1000, cor_intra=0.5) {
                 timevar="from",
                 v.names=c("ERR", "ERR_CIlo", "ERR_CIup",
                           "ERR_SE", "ERR_SE2",
-                          "ERR_logSE", "ERR_logSE2"),
+                          "ERR_logSE", "ERR_logSE2",
+                          "ERR_SE_meta"),
                 sep="_")
     
     list(d_ERR_long=d_ERR_long,

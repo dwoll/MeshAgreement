@@ -42,6 +42,8 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
       * Impact on metaanalysis results?
   * Incorporate ERR/Gy estimates from dose-category-specific RRs in metaanalysis with extra *variance component* or similar? (suggestion David P) (currently: sensitivity analysis without these studies)
   * How to deal with fractionation? (suggestion David P)
+  * How to deal with chemotherapy? Only studies without chemotherapy? Those adjusting for chemotherapy? (suggestion from Wesley)
+  * Sensitivity analysis: Exclude studies with external endpoint (SIR, IRR, ...)
 
 # Haematopoetic_Lymph
 

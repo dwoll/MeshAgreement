@@ -3,13 +3,14 @@
 Relevant for studies with only category-specific RRs
 
 ```{r}
+meta_type <- "sens_uncorr"
 d_ERR_wide_ma <- d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, rep(NA_real_, n()), ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_lm))
+           used       =get_used(ERR_org, rep(NA_real_, n()), ERR_lm),
+           ERR        =coalesce(ERR_org,         ERR_lm),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_lm),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_lm),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_lm))
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -18,6 +19,7 @@ d_ERR_wide_ma <- d_ERR_wide %>%
 ### Synthetic single ERR estimate from all studies with category RRs
 
 ```{r}
+meta_type <- "sens_synth1"
 d_ERR_from_RRs <- get_single_ERR_from_RRs(d_RR_sel, cor_intra=0.5, CI_width=0.95)
 ```
 
@@ -25,10 +27,10 @@ d_ERR_from_RRs <- get_single_ERR_from_RRs(d_RR_sel, cor_intra=0.5, CI_width=0.95
 ## pool estimates
 d_ERR_org <- d_ERR_wide %>%
     filter(!is.na(ERR_org)) %>%
-    mutate(ERR      =ERR_org,
-           ERR_CIlo =ERR_CIlo_org,
-           ERR_CIup =ERR_CIup_org,
-           ERR_logSE=ERR_logSE_org,
+    mutate(ERR        =ERR_org,
+           ERR_CIlo   =ERR_CIlo_org,
+           ERR_CIup   =ERR_CIup_org,
+           ERR_SE_meta=ERR_SE_meta_org,
            used="org")
 
 d_ERR_wide_ma <- bind_rows(d_ERR_org, d_ERR_from_RRs)
@@ -40,19 +42,21 @@ d_ERR_wide_ma <- bind_rows(d_ERR_org, d_ERR_from_RRs)
 ### Pooled ERR on original scale (gls)
 
 ```{r}
+meta_type <- "sens_orgscale"
 d_ERR_wide_ma <- d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+           used    =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR     =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo=coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup=coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE  =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm))
 ```
 
 ```{r}
-d_ERR_wide_ma %>%
+d_ERR_out <- d_ERR_wide_ma %>%
     select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE, used)
+
+d_ERR_out
 ```
 
 Metaanalysis: pooled ERR
@@ -62,11 +66,38 @@ pooled_ERR <- get_ERR_pooled(d_ERR_wide_ma)
 pooled_ERR
 ```
 
+Prediction interval
+
+```{r}
+ci_pred <- predict(pooled_ERR, pi.type="t")
+ci_pred
+```
+
+```{r}
+assign(paste0("d_ERR_", cancer_site), d_ERR_out %>% mutate(site=cancer_site))
+assign(paste0("d_meta_", cancer_site, "_", meta_type),
+       data.frame(site=cancer_site,
+                  type=meta_type,
+                  tau2=pooled_logRR$tau2,
+                  # tau2_se=pooled_logRR$se.tau2,
+                  I2=pooled_logRR$I2,
+                  H2=pooled_logRR$H2,
+                  Q=pooled_logRR$QE,
+                  Q_pval=pooled_logRR$QEp,
+                  ERR=ci_pred$pred,
+                  ERR_CIlo=ci_pred$ci.lb,
+                  ERR_CIup=ci_pred$ci.ub,
+                  ERR_PIlo=ci_pred$pi.lb,
+                  ERR_PIup=ci_pred$pi.ub))
+```
+
+
 ### Use all studies, including overlapping data
 
 Also including studies
 
 ```{r}
+meta_type <- "sens_withoverlap"
 setdiff(d_RR_all$auth_year,
         d_RR_sel$auth_year)
 ```
@@ -74,13 +105,12 @@ setdiff(d_RR_all$auth_year,
 ```{r}
 d_ERR_wide_ma <- d_ERR_all_lw$d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm)) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, CI_width_ERR, ERR_logSE, used)
+           used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm)) %>%
+    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -89,16 +119,15 @@ d_ERR_wide_ma <- d_ERR_all_lw$d_ERR_wide %>%
 ### Use only studies with original ERR/Gy
 
 ```{r}
+meta_type <- "sens_onlyorg"
 d_ERR_wide_ma <- d_ERR_wide %>%
-    mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm)) %>%
+    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR        =ERR_org,
+           ERR_CIlo   =ERR_CIlo_org,
+           ERR_CIup   =ERR_CIup_org,
+           ERR_SE_meta=ERR_SE_meta_org) %>%
     filter(used == "org") %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, CI_width_ERR, ERR_logSE, used)
+    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}

@@ -8,6 +8,11 @@ output:
     number_sections: yes
     keep_tex: no
     fig_crop: no
+
+header-includes:
+    \usepackage{pdflscape}
+    \newcommand{\blandscape}{\begin{landscape}}
+    \newcommand{\elandscape}{\end{landscape}}
 ---
     
 ```{r setup, include=FALSE}
@@ -30,6 +35,17 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
 ```
 
 ```{r echo=FALSE}
+## Template for studies with overlapping data
+## exclude in primary analysis due to overlapping data
+## age at exposure < 18
+## age at exposure > 18
+## EAR/Gy available
+## chemo: patients without chemo
+## chemo: patients with chemo, adjusted for
+## chemo: patients with chemo, not adjusted for
+## includes internal exposure? (brachytherapy)
+
+## sensitivity: no external (IRR, SIR etc.)
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 ## load packages
@@ -53,28 +69,28 @@ library(readxl)
 #####---------------------------------------------------------------------------
 ## read in data for different cancer sites
 excel_file   <- "SPCaRT_Chapter5_Epidemiology_incomplete first draft_TABLES_08.07.2022.xlsx"
-excel_sheets <- list(Haem_Lymph="Tab_5_B_2_Haem_Lymph_meta",
-                     Sarcoma   ="Tab_5_B_3_Sarcoma_meta",
-                     Breast    ="Tab_5_B_4_Breast_meta",
-                     Lung      ="Tab_5_B_5_Lung_meta",
-                     Gastro    ="Tab_5_B_6_Gastro_meta",
-                     Thyroid   ="Tab_5_B_7_Thyroid_meta",
-                     Brain     ="Tab_5_B_8_Brain_meta")
+excel_sheets <- list(HaemLym="Tab_5_B_2_Haem_Lymph_meta",
+                     Sarcoma="Tab_5_B_3_Sarcoma_meta",
+                     Breast ="Tab_5_B_4_Breast_meta",
+                     Lung   ="Tab_5_B_5_Lung_meta",
+                     Gastro ="Tab_5_B_6_Gastro_meta",
+                     Thyroid="Tab_5_B_7_Thyroid_meta",
+                     Brain  ="Tab_5_B_8_Brain_meta")
 
 d_RR0_allL <- Map(function(s) { read_xlsx(excel_file, sheet=s) }, excel_sheets)
 
 #####---------------------------------------------------------------------------
 ## remove studies with overlapping data
-overlappingL <- list(Haem_Lymph=c(),
-                     Sarcoma   =c(),
-                     Breast    =c("{Inskip, 2009, 19620485}",      # overlap Veiga 2019
-                                  "{Schonfeld, 2020, 31794291}",   # overlap Veiga 2019
-                                  "{van Leeuwen, 2003, 12837833}", # overlap Travis 2003
-                                  "{Rubino, 2003, 12942115}"),     # overlap Guibout 2005
-                     Lung      =c(),
-                     Gastro    =c(),
-                     Thyroid   =c(),
-                     Brain     =c())
+overlappingL <- list(HaemLym=c(),
+                     Sarcoma=c(),
+                     Breast =c("{Inskip, 2009, 19620485}",      # overlap Veiga 2019
+                               "{Schonfeld, 2020, 31794291}",   # overlap Veiga 2019
+                               "{van Leeuwen, 2003, 12837833}", # overlap Travis 2003
+                               "{Rubino, 2003, 12942115}"),     # overlap Guibout 2005
+                     Lung   =c(),
+                     Gastro =c(),
+                     Thyroid=c(),
+                     Brain  =c())
 
 d_RR0_selL <- Map(function(x, y) { x %>% filter(!(Reference %in% y)) },
                   d_RR0_allL, overlappingL)
@@ -108,6 +124,7 @@ saveRDS(d_RR_selL,  file="d_RR_selL.rda")
 
 n_repl <- 1000
 
+d_RR0_allL <- readRDS("d_RR0_allL.rda")
 d_RR0_selL <- readRDS("d_RR0_selL.rda")
 d_RR_allL  <- readRDS("d_RR_allL.rda")
 d_RR_selL  <- readRDS("d_RR_selL.rda")
@@ -184,10 +201,12 @@ d_ERR_selL <- readRDS("d_ERR_selL.rda")
 # Haematopoetic / Lymph
 
 ```{r}
-d_RR_all     <- d_RR_allL$Haem_Lymph
-d_RR_sel     <- d_RR_selL$Haem_Lymph
-d_ERR_all_lw <- d_ERR_allL$Haem_Lymph
-d_ERR_sel_lw <- d_ERR_selL$Haem_Lymph
+cancer_site <- "HaemLym"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -276,10 +295,12 @@ ggplot(d_ERR_plot,
 # Sarcoma
 
 ```{r}
-d_RR_all     <- d_RR_allL$Sarcoma
-d_RR_sel     <- d_RR_selL$Sarcoma
-d_ERR_all_lw <- d_ERR_allL$Sarcoma
-d_ERR_sel_lw <- d_ERR_selL$Sarcoma
+cancer_site <- "Sarcoma"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -368,10 +389,12 @@ ggplot(d_ERR_plot,
 # Breast
 
 ```{r}
-d_RR_all     <- d_RR_allL$Breast
-d_RR_sel     <- d_RR_selL$Breast
-d_ERR_all_lw <- d_ERR_allL$Breast
-d_ERR_sel_lw <- d_ERR_selL$Breast
+cancer_site <- "Breast"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -506,10 +529,12 @@ ggplot(d_ERR_plot,
 # Lung
 
 ```{r}
-d_RR_all     <- d_RR_allL$Lung
-d_RR_sel     <- d_RR_selL$Lung
-d_ERR_all_lw <- d_ERR_allL$Lung
-d_ERR_sel_lw <- d_ERR_selL$Lung
+cancer_site <- "Lung"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -598,10 +623,12 @@ ggplot(d_ERR_plot,
 # Gastro
 
 ```{r}
-d_RR_all     <- d_RR_allL$Gastro
-d_RR_sel     <- d_RR_selL$Gastro
-d_ERR_all_lw <- d_ERR_allL$Gastro
-d_ERR_sel_lw <- d_ERR_selL$Gastro
+cancer_site <- "Gastro"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -690,10 +717,12 @@ ggplot(d_ERR_plot,
 # Thyroid
 
 ```{r}
-d_RR_all     <- d_RR_allL$Thyroid
-d_RR_sel     <- d_RR_selL$Thyroid
-d_ERR_all_lw <- d_ERR_allL$Thyroid
-d_ERR_sel_lw <- d_ERR_selL$Thyroid
+cancer_site <- "Thyroid"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -788,12 +817,11 @@ d_ERR_wide <- readRDS(paste0("d_ERR_thyroid_thresh",
 
 d_ERR_wide_ma <- d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+           used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm))
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -808,12 +836,11 @@ d_ERR_wide <- readRDS(paste0("d_ERR_thyroid_thresh",
 
 d_ERR_wide_ma <- d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used     =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR      =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo =coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup =coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE   =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm),
-           ERR_logSE=coalesce(ERR_logSE_org, ERR_logSE_gls, ERR_logSE_lm))
+           used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm))
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -822,10 +849,12 @@ d_ERR_wide_ma <- d_ERR_wide %>%
 # Brain
 
 ```{r}
-d_RR_all     <- d_RR_allL$Brain
-d_RR_sel     <- d_RR_selL$Brain
-d_ERR_all_lw <- d_ERR_allL$Brain
-d_ERR_sel_lw <- d_ERR_selL$Brain
+cancer_site <- "Brain"
+
+d_RR_all     <- d_RR_allL[[cancer_site]]
+d_RR_sel     <- d_RR_selL[[cancer_site]]
+d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
+d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
 d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
 d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
@@ -922,4 +951,120 @@ ggplot(d_ERR_plot,
 ## Sensitivity Analyses
 
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
+```
+
+\blandscape
+
+# All solid cancer
+## Primary analysis
+### Metaanalysis
+
+```{r}
+cancer_sites_solid <- c("Sarcoma",
+                        "Breast",
+                        "Lung",
+                        "Gastro",
+                        "Thyroid",
+                        "Brain")
+
+tables_err_solid <- paste0("d_ERR_site_", cancer_sites_solid)
+
+d_ERR_wide_ma <- do.call("bind_rows", lapply(tables_err_solid, try_get)) %>%
+    filter(used != "none") %>%
+    select(-weight) %>%
+    rename(ERR_SE_meta=ERR_SE)
+
+cancer_site <- "all_solid"
+meta_type   <- "special"
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+# Combined results
+## ERRs used as input for metaanalysis
+
+```{r, results="asis"}
+cancer_sites <- c("HaemLym",
+                  "Sarcoma",
+                  "Breast",
+                  "Lung",
+                  "Gastro",
+                  "Thyroid",
+                  "Brain")
+
+sens_types <- c("primary",
+                "sens_uncorr",
+                "sens_synth1",
+                "sens_withoverlap",
+                "sens_onlyorg",
+                "sens_orgscale")
+```
+
+```{r}
+tables_err_site <- paste0("d_ERR_site_", cancer_sites)
+
+tables_err_all <- do.call("bind_rows", lapply(tables_err_site, try_get)) %>%
+    filter(used != "none") %>%
+    select(site, auth_year, everything())
+
+writexl::write_xlsx(tables_err_all, "table_err_all.xlsx")
+
+tables_err_all %>%
+    knitr::kable()
+```
+
+## Metaanalysis results (primary)
+
+```{r}
+d_tables_meta_site <- expand.grid(cs=cancer_sites, st=sens_types)
+tables_meta_site   <- paste0("d_meta_",
+                             d_tables_meta_site$cs, "_",
+                             d_tables_meta_site$st)
+
+tables_meta_all <- do.call("bind_rows", lapply(tables_meta_site, try_get)) %>%
+    mutate(site=factor(site, levels=cancer_sites),
+           type=factor(type, levels=rev(sens_types))) %>%
+    select(site, everything())
+
+tables_meta_all %>%
+    filter(type == "primary") %>%
+    select(-type) %>%
+    knitr::kable()
+```
+
+\elandscape
+
+## Metaanalysis results (primary and sensitivity)
+
+```{r fig.height=8}
+ggplot(tables_meta_all,
+       aes(x=type, y=ERR, ymin=ERR_CIlo, ymax=ERR_CIup, color=type)) +
+    geom_point(position=position_dodge(width=0.3)) +
+    geom_linerange(position=position_dodge(width=0.3)) +
+    geom_hline(yintercept=0, col="darkgray") +
+    xlab("Metaanalysis type") +
+    ylab(expression(paste('ERR ', Gy^-1, ' with 95% CI'))) +
+    # scale_y_log10() +
+    coord_flip() +
+    facet_grid(site ~ .) +
+    ggpt +
+    theme(legend.position="none")
+```
+
+Without sarcoma, thyroid and brain due to different magnitude
+
+```{r fig.height=5}
+ggplot(tables_meta_all %>% filter(!(site %in% c("Sarcoma", "Thyroid", "Brain"))),
+       aes(x=type, y=ERR, ymin=ERR_CIlo, ymax=ERR_CIup, color=type)) +
+    geom_point(position=position_dodge(width=0.3)) +
+    geom_linerange(position=position_dodge(width=0.3)) +
+    geom_hline(yintercept=0, col="darkgray") +
+    xlab("Metaanalysis type") +
+    ylab(expression(paste('ERR ', Gy^-1, ' with 95% CI'))) +
+    # scale_y_log10() +
+    coord_flip() +
+    facet_grid(site ~ .) +
+    ggpt +
+    theme(legend.position="none")
 ```
