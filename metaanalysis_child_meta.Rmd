@@ -19,7 +19,7 @@ pooled_logRR
 Metanalysis: Pooled ERR = exp(logRR) - 1
 
 ```{r}
-ci_pred <- predict(pooled_logRR, transf=transf_logRR_to_ERR, pi.type="t")
+ci_pred <- predict(pooled_logRR, transf=transf_logRR_to_ERR, pi.type="riley")
 ci_pred
 ```
 
