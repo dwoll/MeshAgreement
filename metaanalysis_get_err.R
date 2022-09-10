@@ -10,7 +10,7 @@ library(parallel)
 
 source("metaanalysis_global.R")
 
-n_repl  <- 200
+n_repl  <- 2000
 n_cores <- min(10, parallel::detectCores()-2)
 
 d_RR0_selL <- readRDS("d_RR0_selL.rda")

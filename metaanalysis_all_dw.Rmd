@@ -35,17 +35,6 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
 ```
 
 ```{r echo=FALSE}
-## Template for studies with overlapping data
-## exclude in primary analysis due to overlapping data
-## age at exposure < 18
-## age at exposure > 18
-## EAR/Gy available
-## chemo: patients without chemo
-## chemo: patients with chemo, adjusted for
-## chemo: patients with chemo, not adjusted for
-## includes internal exposure? (brachytherapy)
-
-## sensitivity: no external (IRR, SIR etc.)
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 ## load packages
@@ -54,130 +43,63 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
 #####---------------------------------------------------------------------------
 
 library(dplyr)
-library(ggplot2)
 
 source("metaanalysis_global.R")
-```
+source("plot_global.R")
 
-```{r eval=FALSE}
-library(readxl)
+## considered cancer sites - will be used in lists to
+## identify sub-analyses
+cancer_sites <- c("HaemLym",
+                  "Sarcoma",
+                  "Breast",
+                  "Lung",
+                  "Gastro",
+                  "Thyroid",
+                  "Brain")
 
-#####---------------------------------------------------------------------------
-## run this chunk by hand for reading in data
-#####---------------------------------------------------------------------------
+## used for analysis of all solid cancer
+cancer_sites_solid <- c("Sarcoma",
+                        "Breast",
+                        "Lung",
+                        "Gastro",
+                        "Thyroid",
+                        "Brain")
 
-#####---------------------------------------------------------------------------
-## read in data for different cancer sites
-excel_file   <- "SPCaRT_Chapter5_Epidemiology_incomplete first draft_TABLES_08.07.2022.xlsx"
-excel_sheets <- list(HaemLym="Tab_5_B_2_Haem_Lymph_meta",
-                     Sarcoma="Tab_5_B_3_Sarcoma_meta",
-                     Breast ="Tab_5_B_4_Breast_meta",
-                     Lung   ="Tab_5_B_5_Lung_meta",
-                     Gastro ="Tab_5_B_6_Gastro_meta",
-                     Thyroid="Tab_5_B_7_Thyroid_meta",
-                     Brain  ="Tab_5_B_8_Brain_meta")
+## names of sensitivity analyses
+sens_types <- c("primary",
+                "sens_uncorr",
+                "sens_synth1",
+                "sens_all",
+                "sens_only_org",
+                "sens_children",
+                "sens_adults",
+                "sens_chemo_no",
+                "sens_chemo_yes_adj",
+                "sens_brachy_no",
+                "sens_org_scale")
 
-d_RR0_allL <- Map(function(s) { read_xlsx(excel_file, sheet=s) }, excel_sheets)
-
-#####---------------------------------------------------------------------------
-## remove studies with overlapping data
-overlappingL <- list(HaemLym=c(),
-                     Sarcoma=c(),
-                     Breast =c("{Inskip, 2009, 19620485}",      # overlap Veiga 2019
-                               "{Schonfeld, 2020, 31794291}",   # overlap Veiga 2019
-                               "{van Leeuwen, 2003, 12837833}", # overlap Travis 2003
-                               "{Rubino, 2003, 12942115}"),     # overlap Guibout 2005
-                     Lung   =c(),
-                     Gastro =c(),
-                     Thyroid=c(),
-                     Brain  =c())
-
-d_RR0_selL <- Map(function(x, y) { x %>% filter(!(Reference %in% y)) },
-                  d_RR0_allL, overlappingL)
-
-#####---------------------------------------------------------------------------
-## fill in missing information such as CI boundaries, reference doses
-## thyroid: downturn in dose-response at high doses -> set threshold
-dose_thresh_thyroid <- 10
-
-d_RR_allL <- Map(rr_impute_missing, d_RR0_allL)
-d_RR_selL <- Map(rr_impute_missing, d_RR0_selL)
-
-d_RR_allL$Thyroid <- d_RR_allL$Thyroid %>%
-    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
-
-d_RR_selL$Thyroid <- d_RR_selL$Thyroid %>%
-    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
-
-#####---------------------------------------------------------------------------
-## save to file
-saveRDS(d_RR0_allL, file="d_RR0_allL.rda")
-saveRDS(d_RR0_selL, file="d_RR0_selL.rda")
-saveRDS(d_RR_allL,  file="d_RR_allL.rda")
-saveRDS(d_RR_selL,  file="d_RR_selL.rda")
-```
-
-```{r eval=FALSE}
-#####---------------------------------------------------------------------------
-## run this chunk by hand to re-do estimating ERR/Gy + CI from category RRs
-#####---------------------------------------------------------------------------
-
-n_repl <- 1000
-
-d_RR0_allL <- readRDS("d_RR0_allL.rda")
-d_RR0_selL <- readRDS("d_RR0_selL.rda")
-d_RR_allL  <- readRDS("d_RR_allL.rda")
-d_RR_selL  <- readRDS("d_RR_selL.rda")
-
-d_ERR_allL <- Map(get_all_ERR_from_RR, d_RR_allL, n_repl=n_repl)
-## TODO: unnecessary duplication
-d_ERR_selL <- Map(get_all_ERR_from_RR, d_RR_selL, n_repl=n_repl)
-
-saveRDS(d_ERR_allL, file="d_ERR_allL.rda")
-saveRDS(d_ERR_selL, file="d_ERR_selL.rda")
-
-#####---------------------------------------------------------------------------
-## sensitivity: different dose thresholds for thyroid
-#####---------------------------------------------------------------------------
-
-## 5 Gy
-dose_thresh_thyroid <- 5
-d_RR_sel <- rr_impute_missing(d_RR0_selL$Thyroid) %>%
-    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
-
-d_ERR_selL <- get_all_ERR_from_RR(d_RR_sel, n_repl=n_repl)
-saveRDS(d_ERR_selL$d_ERR_wide,
-        file=paste0("d_ERR_thyroid_thresh",
-                    sprintf("%.2d", dose_thresh_thyroid), "_sel_wide.rda"))
-
-## 20 Gy
-dose_thresh_thyroid <- 20
-d_RR_sel <- rr_impute_missing(d_RR0_selL$Thyroid) %>%
-    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
-
-d_ERR_selL <- get_all_ERR_from_RR(d_RR_sel, n_repl=n_repl)
-saveRDS(d_ERR_selL$d_ERR_wide,
-        file=paste0("d_ERR_thyroid_thresh",
-                    sprintf("%.2d", dose_thresh_thyroid), "_sel_wide.rda"))
-```
-
-```{r}
 #####---------------------------------------------------------------------------
 ## load previously generated data and estimates
 #####---------------------------------------------------------------------------
 
-d_RR_allL  <- readRDS("d_RR_allL.rda")
-d_RR_selL  <- readRDS("d_RR_selL.rda")
-d_ERR_allL <- readRDS("d_ERR_allL.rda")
-d_ERR_selL <- readRDS("d_ERR_selL.rda")
+d_RR_allL            <- readRDS("d_RR_allL.rda")
+d_RR_uniqueL         <- readRDS("d_RR_uniqueL.rda")
 
-#####---------------------------------------------------------------------------
-#####---------------------------------------------------------------------------
+d_ERR_allL           <- readRDS("d_ERR_allL.rda")
+d_ERR_uniqueL        <- readRDS("d_ERR_uniqueL.rda")
+d_ERR_childrenL      <- readRDS("d_ERR_childrenL.rda")
+d_ERR_adultsL        <- readRDS("d_ERR_adultsL.rda")
+d_ERR_chemo_noL      <- readRDS("d_ERR_chemo_noL.rda")
+d_ERR_chemo_yes_adjL <- readRDS("d_ERR_chemo_yes_adjL.rda")
+d_ERR_brachy_noL     <- readRDS("d_ERR_brachy_noL.rda")
 ```
 
 **CAVE** "RR" here may refer to RR, OR, HR
 
 # Methods
+
+  * Primary analysis only uses data from studies with non-overlapping participants
+
 ## ERR/Gy from category-specific RRs + CIs
 
   * Approach as in: Doi et al. 2014: https://doi.org/10.1093/jrr/rru045
@@ -191,95 +113,48 @@ d_ERR_selL <- readRDS("d_ERR_selL.rda")
   * Metaanalysis uses log(ERR+1) as input together with SE on log scale for weighting
   * Metaanalysis results are back-transformed using exp(logRR) - 1
 
+```{r eval=FALSE}
 ## Sensitivity: Synthetic single ERR estimate from all studies with category RRs
 
-  * Use all per-study category RRs in a single generalized least squares regression model
-  * Within-study RRs: assume homogeneous correlation matrix with off-diagonal 0.5
-  * Assume no correlation between study RRs
-  * Random effects metaanalysis using synthetic single estimate from category-RR-only studies and studies with ERR/Gy
+#   * Use all per-study category RRs in a single generalized least squares regression model
+#   * Within-study RRs: assume homogeneous correlation matrix with off-diagonal 0.5
+#   * Assume no correlation between study RRs
+#   * Random effects metaanalysis using synthetic single estimate from category-RR-only studies and studies with ERR/Gy
+```
 
 # Haematopoetic / Lymph
 
 ```{r}
 cancer_site <- "HaemLym"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-                  color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 30)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]], ylim=c(0, 30))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
 
 ```{r fig.height=8}
-d_ERR_plot <- d_ERR_long
-
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    length.out=2))
-
-d_ERR_ribbon <- d_ERR_plot %>%
-    full_join(d_ribbon, by=character()) %>%
-    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
-           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
-
-ggplot(d_RR_sel) +
-    geom_point(aes(x=d_kPrime, y=RR_cat)) +
-    geom_linerange(aes(x=d_kPrime, y=RR_cat,
-                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
-    geom_ribbon(data=d_ERR_ribbon,
-                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
-                    color=from, fill=from), alpha=0.3, linetype=0) +
-    geom_abline(data=d_ERR_plot,
-                aes(intercept=1, slope=ERR, color=from)) +
-    coord_cartesian(ylim=c(0, 30)) +
-    facet_wrap(~ auth_year) +
-    xlab("Dose [Gy]") +
-    ylab("RR") +
-    ggpt +
-    theme(legend.position="bottom")
+plot_err_categ_rr_ci(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                     d_RR_uniqueL[[cancer_site]],
+                     ylim=c(0, 30), lpos="bottom")
 ```
 
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-0.5, 13)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-0.5, 13),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -296,84 +171,37 @@ ggplot(d_ERR_plot,
 
 ```{r}
 cancer_site <- "Sarcoma"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-                  color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 80)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]],
+                 ylim=c(0, 80))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
 
 ```{r fig.height=8}
-d_ERR_plot <- d_ERR_long
-
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    length.out=2))
-
-d_ERR_ribbon <- d_ERR_plot %>%
-    full_join(d_ribbon, by=character()) %>%
-    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
-           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
-
-ggplot(d_RR_sel) +
-    geom_point(aes(x=d_kPrime, y=RR_cat)) +
-    geom_linerange(aes(x=d_kPrime, y=RR_cat,
-                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
-    geom_ribbon(data=d_ERR_ribbon,
-                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
-                    color=from, fill=from), alpha=0.3, linetype=0) +
-    geom_abline(data=d_ERR_plot,
-                aes(intercept=1, slope=ERR, color=from)) +
-    coord_cartesian(ylim=c(0, 80)) +
-    facet_wrap(~ auth_year) +
-    xlab("Dose [Gy]") +
-    ylab("RR") +
-    ggpt +
-    theme(legend.position=c(0.85, 0.12))
+plot_err_categ_rr_ci(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                     d_RR_uniqueL[[cancer_site]],
+                     ylim=c(0, 80),
+                     lpos=c(0.85, 0.12))
 ```
 
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-1.2, 23)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-1.2, 23),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -390,30 +218,14 @@ ggplot(d_ERR_plot,
 
 ```{r}
 cancer_site <- "Breast"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel,
-       aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-           color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 10)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]],
+                 ylim=c(0, 10))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
@@ -421,7 +233,7 @@ ggplot(d_RR_sel,
 Note: For Veiga 2019, ERR derived from OR/10 Gy is plotted.
 
 ```{r fig.height=8}
-d_ERR_Veiga <- d_RR_sel %>%
+d_ERR_Veiga <- d_RR_uniqueL[[cancer_site]] %>%
     filter(auth_year == "Veiga_2019") %>%
     mutate(ERR     =RR-1,
            ERR_CIlo=RR_CIlo-1,
@@ -430,13 +242,13 @@ d_ERR_Veiga <- d_RR_sel %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     slice(1)
 
-d_ERR_sub <- d_ERR_long %>%
+d_ERR_sub <- d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     filter(!((auth_year == "Veiga_2019") & (from == "org")))
 
 d_ERR_plot <- bind_rows(d_ERR_sub, d_ERR_Veiga)
 
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
+d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_uniqueL[[cancer_site]]$d_kPrime, na.rm=TRUE),
+                                    to  =max(d_RR_uniqueL[[cancer_site]]$d_kPrime, na.rm=TRUE),
                                     length.out=2))
 
 d_ERR_ribbon <- d_ERR_plot %>%
@@ -444,7 +256,7 @@ d_ERR_ribbon <- d_ERR_plot %>%
     mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
            ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
 
-ggplot(d_RR_sel) +
+ggplot(d_RR_uniqueL[[cancer_site]]) +
     geom_point(aes(x=d_kPrime, y=RR_cat)) +
     geom_linerange(aes(x=d_kPrime, y=RR_cat,
                        ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
@@ -467,10 +279,10 @@ Only Svahn-Tapper 2006 (off the charts)
 d_ERR_ribbon_ST2006 <- d_ERR_ribbon %>%
     filter(auth_year == "Svhn-Tp_2006")
 
-d_ERR_long_ST2006 <- d_ERR_long %>%
+d_ERR_long_ST2006 <- d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     filter(auth_year == "Svhn-Tp_2006")
 
-d_RR_ST2006 <- d_RR_sel %>%
+d_RR_ST2006 <- d_RR_uniqueL[[cancer_site]] %>%
     filter(auth_year == "Svhn-Tp_2006")
 
 ggplot(d_RR_ST2006) +
@@ -495,25 +307,15 @@ ggplot(d_RR_ST2006) +
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-1, 4.5)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-1, 4.5),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -530,84 +332,37 @@ ggplot(d_ERR_plot,
 
 ```{r}
 cancer_site <- "Lung"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-                  color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 20)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]],
+                 ylim=c(0, 20))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
 
 ```{r fig.height=8}
-d_ERR_plot <- d_ERR_long
-
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    length.out=2))
-
-d_ERR_ribbon <- d_ERR_plot %>%
-    full_join(d_ribbon, by=character()) %>%
-    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
-           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
-
-ggplot(d_RR_sel) +
-    geom_point(aes(x=d_kPrime, y=RR_cat)) +
-    geom_linerange(aes(x=d_kPrime, y=RR_cat,
-                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
-    geom_ribbon(data=d_ERR_ribbon,
-                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
-                    color=from, fill=from), alpha=0.3, linetype=0) +
-    geom_abline(data=d_ERR_plot,
-                aes(intercept=1, slope=ERR, color=from)) +
-    coord_cartesian(ylim=c(0, 15)) +
-    facet_wrap(~ auth_year) +
-    xlab("Dose [Gy]") +
-    ylab("RR") +
-    ggpt +
-    theme(legend.position="bottom")
+plot_err_categ_rr_ci(d_ERR_uniqueL[[cancer_site]]$d_ERR_long, 
+                     d_RR_uniqueL[[cancer_site]],
+                     ylim=c(0, 15),
+                     lpos="bottom")
 ```
 
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-0.2, 2.5)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-0.2, 2.5),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -624,84 +379,37 @@ ggplot(d_ERR_plot,
 
 ```{r}
 cancer_site <- "Gastro"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-                  color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 10)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]],
+                 ylim=c(0, 10))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
 
 ```{r fig.height=8}
-d_ERR_plot <- d_ERR_long
-
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    length.out=2))
-
-d_ERR_ribbon <- d_ERR_plot %>%
-    full_join(d_ribbon, by=character()) %>%
-    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
-           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
-
-ggplot(d_RR_sel) +
-    geom_point(aes(x=d_kPrime, y=RR_cat)) +
-    geom_linerange(aes(x=d_kPrime, y=RR_cat,
-                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
-    geom_ribbon(data=d_ERR_ribbon,
-                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
-                    color=from, fill=from), alpha=0.3, linetype=0) +
-    geom_abline(data=d_ERR_plot,
-                aes(intercept=1, slope=ERR, color=from)) +
-    coord_cartesian(ylim=c(0, 15)) +
-    facet_wrap(~ auth_year) +
-    xlab("Dose [Gy]") +
-    ylab("RR") +
-    ggpt +
-    theme(legend.position="bottom")
+plot_err_categ_rr_ci(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                     d_RR_uniqueL[[cancer_site]],
+                     ylim=c(0, 15),
+                     lpos="bottom")
 ```
 
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-0.2, 2.5)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-0.2, 2.5),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -718,84 +426,36 @@ ggplot(d_ERR_plot,
 
 ```{r}
 cancer_site <- "Thyroid"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis - dose threshold 10 Gy
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-                  color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 10)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]], ylim=c(0, 10))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
 
 ```{r fig.height=8}
-d_ERR_plot <- d_ERR_long
-
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    length.out=2))
-
-d_ERR_ribbon <- d_ERR_plot %>%
-    full_join(d_ribbon, by=character()) %>%
-    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
-           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
-
-ggplot(d_RR_sel) +
-    geom_point(aes(x=d_kPrime, y=RR_cat)) +
-    geom_linerange(aes(x=d_kPrime, y=RR_cat,
-                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
-    geom_ribbon(data=d_ERR_ribbon,
-                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
-                    color=from, fill=from), alpha=0.3, linetype=0) +
-    geom_abline(data=d_ERR_plot,
-                aes(intercept=1, slope=ERR, color=from)) +
-    coord_cartesian(ylim=c(0, 15)) +
-    facet_wrap(~ auth_year) +
-    xlab("Dose [Gy]") +
-    ylab("RR") +
-    ggpt +
-    theme(legend.position=c(0.85, 0.12))
+plot_err_categ_rr_ci(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                     d_RR_uniqueL[[cancer_site]],
+                     ylim=c(0, 15),
+                     lpos=c(0.85, 0.12))
 ```
 
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-1.2, 20)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-1.2, 20),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -850,97 +510,37 @@ d_ERR_wide_ma <- d_ERR_wide %>%
 
 ```{r}
 cancer_site <- "Brain"
-
-d_RR_all     <- d_RR_allL[[cancer_site]]
-d_RR_sel     <- d_RR_selL[[cancer_site]]
-d_ERR_all_lw <- d_ERR_allL[[cancer_site]]
-d_ERR_sel_lw <- d_ERR_selL[[cancer_site]]
-d_ERR_long   <- d_ERR_sel_lw$d_ERR_long
-d_ERR_wide   <- d_ERR_sel_lw$d_ERR_wide
 ```
 
 ## Primary analysis
 ### Category RR + CIs
 
 ```{r fig.height=6}
-ggplot(d_RR_sel, aes(x=d_kPrime, y=RR_cat, ymin=RR_cat_CIlo, ymax=RR_cat_CIup,
-                  color=auth_year)) +
-    geom_point() +
-    geom_linerange() +
-    coord_cartesian(ylim=c(0, 60)) +
-    xlab("Dose [Gy]") +
-    ylab("RR category") +
-    ggpt +
-    theme(legend.position="bottom",
-          legend.title=element_blank())
+plot_categ_rr_ci(d_RR_uniqueL[[cancer_site]],
+                 ylim=c(0, 60))
 ```
 
 ### Estimated per-study ERR + CIs with category RR + CIs
 
 ```{r fig.height=8}
-# d_ERR_Finke <- d_RR_sel %>%
-#     filter(auth_year == "Finke_2015") %>%
-#     mutate(ERR     =RR-1,
-#            ERR_CIlo=RR_CIlo-1,
-#            ERR_CIup=RR_CIup-1,
-#            from="org") %>%
-#     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
-#     slice(1)
-# 
-# d_ERR_sub <- d_ERR_long %>%
-#     filter(!((auth_year == "Finke_2015") & (from == "org")))
-# 
-# d_ERR_plot <- bind_rows(d_ERR_sub, d_ERR_Finke)
-d_ERR_plot <- d_ERR_long
-
-d_ribbon <- data.frame(d_kPrime=seq(from=min(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    to  =max(d_RR_sel$d_kPrime, na.rm=TRUE),
-                                    length.out=2))
-
-d_ERR_ribbon <- d_ERR_plot %>%
-    full_join(d_ribbon, by=character()) %>%
-    mutate(ERR_CI_Ylo=1 + d_kPrime*ERR_CIlo,
-           ERR_CI_Yup=1 + d_kPrime*ERR_CIup)
-
-ggplot(d_RR_sel) +
-    geom_point(aes(x=d_kPrime, y=RR_cat)) +
-    geom_linerange(aes(x=d_kPrime, y=RR_cat,
-                       ymin=RR_cat_CIlo, ymax=RR_cat_CIup)) +
-    geom_ribbon(data=d_ERR_ribbon,
-                aes(x=d_kPrime, ymin=ERR_CI_Ylo, ymax=ERR_CI_Yup,
-                    color=from, fill=from), alpha=0.3, linetype=0) +
-    geom_abline(data=d_ERR_plot,
-                aes(intercept=1, slope=ERR, color=from)) +
-    coord_cartesian(ylim=c(0, 60)) +
-    facet_wrap(~ auth_year) +
-    xlab("Dose [Gy]") +
-    ylab("RR") +
-    ggpt +
-    theme(legend.position=c(0.85, 0.12))
+plot_err_categ_rr_ci(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                     d_RR_uniqueL[[cancer_site]],
+                     ylim=c(0, 60),
+                     lpos=c(0.85, 0.12))
 ```
 
 ### Estimated ERR + CIs with original ERR + CIs
 
 ```{r results="asis"}
-d_ERR_long %>%
+d_ERR_uniqueL[[cancer_site]]$d_ERR_long %>%
     select(auth_year, from, ERR, ERR_CIlo, ERR_CIup) %>%
     knitr::kable(booktabs=TRUE)
 ```
 
 ```{r fig.height=6}
-ggplot(d_ERR_plot,
-       aes(x=auth_year, y=ERR,
-           group=from,
-           color=from,
-           shape=from,
-           ymin=ERR_CIlo,
-           ymax=ERR_CIup)) +
-    geom_point(position=position_dodge(width=0.75)) +
-    geom_linerange(position=position_dodge(width=0.75)) +
-    xlab(NULL) +
-    coord_flip(ylim=c(-0.1, 15)) +
-    ggpt +
-    theme(legend.position=c(0.9, 0.2))
+plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
+                 ylim=c(-0.1, 15),
+                 lpos=c(0.9, 0.2))
 ```
 
 ### Metaanalysis
@@ -960,13 +560,6 @@ ggplot(d_ERR_plot,
 ### Metaanalysis
 
 ```{r}
-cancer_sites_solid <- c("Sarcoma",
-                        "Breast",
-                        "Lung",
-                        "Gastro",
-                        "Thyroid",
-                        "Brain")
-
 tables_err_solid <- paste0("d_ERR_site_", cancer_sites_solid)
 
 d_ERR_wide_ma <- do.call("bind_rows", lapply(tables_err_solid, try_get)) %>%
@@ -983,23 +576,6 @@ meta_type   <- "special"
 
 # Combined results
 ## ERRs used as input for metaanalysis
-
-```{r, results="asis"}
-cancer_sites <- c("HaemLym",
-                  "Sarcoma",
-                  "Breast",
-                  "Lung",
-                  "Gastro",
-                  "Thyroid",
-                  "Brain")
-
-sens_types <- c("primary",
-                "sens_uncorr",
-                "sens_synth1",
-                "sens_withoverlap",
-                "sens_onlyorg",
-                "sens_orgscale")
-```
 
 ```{r}
 tables_err_site <- paste0("d_ERR_site_", cancer_sites)
@@ -1037,34 +613,19 @@ tables_meta_all %>%
 
 ## Metaanalysis results (primary and sensitivity)
 
+Sarcoma, thyroid and brain
+
 ```{r fig.height=8}
-ggplot(tables_meta_all,
-       aes(x=type, y=ERR, ymin=ERR_CIlo, ymax=ERR_CIup, color=type)) +
-    geom_point(position=position_dodge(width=0.3)) +
-    geom_linerange(position=position_dodge(width=0.3)) +
-    geom_hline(yintercept=0, col="darkgray") +
-    xlab("Metaanalysis type") +
-    ylab(expression(paste('ERR ', Gy^-1, ' with 95% CI'))) +
-    # scale_y_log10() +
-    coord_flip() +
-    facet_grid(site ~ .) +
-    ggpt +
-    theme(legend.position="none")
+sites_large_err <- c("Sarcoma", "Thyroid", "Brain")
+d_plot          <- tables_meta_all %>% filter(site %in% sites_large_err)
+plot_meta_results(tables_meta_all)
 ```
+
+\newpage
 
 Without sarcoma, thyroid and brain due to different magnitude
 
 ```{r fig.height=5}
-ggplot(tables_meta_all %>% filter(!(site %in% c("Sarcoma", "Thyroid", "Brain"))),
-       aes(x=type, y=ERR, ymin=ERR_CIlo, ymax=ERR_CIup, color=type)) +
-    geom_point(position=position_dodge(width=0.3)) +
-    geom_linerange(position=position_dodge(width=0.3)) +
-    geom_hline(yintercept=0, col="darkgray") +
-    xlab("Metaanalysis type") +
-    ylab(expression(paste('ERR ', Gy^-1, ' with 95% CI'))) +
-    # scale_y_log10() +
-    coord_flip() +
-    facet_grid(site ~ .) +
-    ggpt +
-    theme(legend.position="none")
+d_plot <- tables_meta_all %>% filter(!(site %in% sites_large_err))
+plot_meta_results(d_plot)
 ```

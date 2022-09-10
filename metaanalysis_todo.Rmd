@@ -38,11 +38,10 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
   * Implement Richardson et al. 2020 Metaanalysis Methods (https://doi.org/10.1007/s00411-020-00863-w)
   * Investigate bias when estimating ERR/Gy from dose-category-specific RRs due to uncertainty in category representative (mean) dose? (suggestion David P)
       * Compare ERR/Gy estimates from dose-category-specific RRs to original ERR/Gy from same studies
-      * For studies with know per-category mean dose, compare to results from choosing boundary mid-points
+      * For studies with known per-category mean dose, compare to results from choosing boundary mid-points
       * Impact on metaanalysis results?
   * Incorporate ERR/Gy estimates from dose-category-specific RRs in metaanalysis with extra *variance component* or similar? (suggestion David P) (currently: sensitivity analysis without these studies)
   * How to deal with fractionation? (suggestion David P)
-  * How to deal with chemotherapy? Only studies without chemotherapy? Those adjusting for chemotherapy? (suggestion from Wesley)
   * Sensitivity analysis: Exclude studies with external endpoint (SIR, IRR, ...)
 
 # Haematopoetic_Lymph
@@ -58,7 +57,6 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
   * Allard 2010: ERR model only linear exponential -> out
   * Holowaty 1995: Category RRs are given separately for ANLL, NCLL. Take all of these?
   * Allodji 2020: Include at all? If so, ERR/Gy for patients without chemotherapy or with chemotherapy?
-  * Sensitivity: No overlapping data
 
 # Sarcoma
 
@@ -66,7 +64,6 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
   * Kuttesch 1996: No category RRs or ERR/Gy, but "include in metaanalysis = yes"?
   * Schwartz 2014: ORs are currently used, but HRs are also available
   * Wong 1997: Results for all sarcomas combined are currently used, but STS only also available
-  * Sensitivity: No overlapping data
 
 # Breast
 
@@ -80,7 +77,6 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
   * Lönn 2010: IRR for external and brachy is currently used, separate also available
   * Ng 2002: No mean dose for overall RR -> out
   * Taylor 2017: Based on whole lung dose -> need to discuss what dose is used in other studies, how to handle Inskip 2009
-  * Sensitivity: No overlapping data
 
 # Gastro
 
@@ -93,12 +89,10 @@ output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
   * Rubino 2003: No absorbed dose -> out
   * Morton 2014 Oesophagus not included? (https://doi.org/10.3324/haematol.2014.108258)
   * Nottage 2012: Is the EOR 1.3 (95% CI -0.5, 3.1, Table 2) really a linear EOR/Gy?
-  * Sensitivity: No overlapping data
 
 # Thyroid
 
   * Ronckers 2006: Use ERR/Gy that was fitted to data < 6 Gy? (1.3 (95% CI:0.4–4.1))
-  * Sensitivity: No overlapping data
 
 # Brain
 

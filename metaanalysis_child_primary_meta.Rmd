@@ -1,7 +1,7 @@
 ```{r}
 meta_type <- "primary"
 
-d_ERR_wide_ma <- d_ERR_wide %>%
+d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
            used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
            ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
@@ -16,11 +16,15 @@ d_ERR_wide_ma <- d_ERR_wide %>%
 Funnel plot
 
 ```{r fig.height=3.5}
-funnel(pooled_logRR, atransf=transf_logRR_to_ERR)
+if(!inherits(pooled_logRR, "try-error")) {
+    funnel(pooled_logRR, atransf=transf_logRR_to_ERR)
+}
 ```
 
 Forest plot
 
 ```{r fig.height=5}
-forest(pooled_logRR, atransf=transf_logRR_to_ERR)
+if(!inherits(pooled_logRR, "try-error")) {
+    forest(pooled_logRR, atransf=transf_logRR_to_ERR)
+}
 ```

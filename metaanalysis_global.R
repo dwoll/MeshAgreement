@@ -18,30 +18,11 @@
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 
-library(ggplot2)
 library(dplyr)
 library(boot)
 library(metafor)
 library(nlme)
 library(mvtnorm)
-
-## ggplot2 theme
-ggpt <- theme_bw() +
-    theme(#text=element_text(size=rel(1.7)),
-        axis.title.x=element_text(size=rel(1.1)),
-        axis.title.y=element_text(size=rel(1.1)),
-        axis.text.x=element_text(size=rel(1.1)),
-        axis.text.y=element_text(size=rel(1.1)),
-        strip.text.x=element_text(size=rel(1.1)),
-        strip.text.y=element_text(size=rel(1.1)),
-        legend.text=element_text(size=rel(1)),
-        legend.title=element_text(size=rel(1.1)),
-        plot.title=element_text(size=rel(1.1))# ,
-        # plot.margin=margin(unit(.25, "cm"),
-        #                    unit(.25, "cm"),
-        #                    unit(.25, "cm"),
-        #                    unit(1, "cm"))
-    )
 
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
@@ -318,6 +299,7 @@ get_ERR_CI <- function(x,
     
     ## return ERR estimate with bootstrap CI
     data.frame(auth_year   =x$auth_year[1],
+               Reference   =x$Reference[1],
                ERR         =ERR_slope,
                ERR_CIlo    =ERR_CI_pbs[1],
                ERR_CIup    =ERR_CI_pbs[2],
@@ -367,7 +349,7 @@ get_all_ERR_from_RR <- function(x, n_repl=1000, cor_intra=0.5) {
     d_ERR_org <- x %>%
         ## if only OR / RR / SIR / IRR available -> use as proxy for ERR
         get_ERR_from_ORRRSIRIRR() %>%
-        select(auth_year, CI_width_ERR, ERR, ERR_CIlo, ERR_CIup) %>%
+        select(auth_year, Reference, CI_width_ERR, ERR, ERR_CIlo, ERR_CIup) %>%
         mutate(from="org") %>%
         unique()
     
@@ -389,7 +371,7 @@ get_all_ERR_from_RR <- function(x, n_repl=1000, cor_intra=0.5) {
     d_ERR_wide <- d_ERR_long %>%
         as.data.frame() %>%
         reshape(direction="wide",
-                idvar=c("auth_year"),
+                idvar=c("auth_year", "Reference"),
                 timevar="from",
                 v.names=c("ERR", "ERR_CIlo", "ERR_CIup", "CI_width_ERR",
                           "ERR_SE", "ERR_SE2",
@@ -434,6 +416,7 @@ get_single_ERR_from_RRs <- function(x, cor_intra=0.5, CI_width=0.95) {
     }
     
     data.frame(auth_year="Category_RRs",
+               Reference="Category_RRs",
                ERR     =err_coef,
                ERR_CIlo=err_ci[1],
                ERR_CIup=err_ci[2]) %>%
@@ -495,11 +478,13 @@ lognorm_org_to_log <- function(mu, sigma) {
 ## pooled logRR from random-effects meta-analysis
 ## assume log-normal distribution for ERR+1
 get_logRR_pooled <- function(x) {
-    rma.uni(log(ERR+1),
-            sei=ERR_SE_meta,
-            method="REML",
-            data=x,
-            slab=auth_year)
+    res <- try(rma.uni(log(ERR+1),
+                       sei=ERR_SE_meta,
+                       method="REML",
+                       data=x,
+                       slab=auth_year))
+    
+    res
 }
 
 ## pooled ERR from random-effects meta-analysis
