@@ -28,3 +28,14 @@ if(!inherits(pooled_logRR, "try-error")) {
     forest(pooled_logRR, atransf=transf_logRR_to_ERR)
 }
 ```
+
+Leave one out
+
+```{r fig.height=5}
+if(!inherits(pooled_logRR, "try-error")) {
+    l1o <- leave1out(pooled_logRR, transf=transf_logRR_to_ERR)
+    l1o %>%
+        as.data.frame() %>%
+        select(estimate, ci.lb, ci.ub, Q, Qp, tau2, I2)
+}
+```

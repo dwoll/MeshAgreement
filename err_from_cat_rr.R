@@ -242,7 +242,7 @@ sens_chemo_yes_adjL <- list(HaemLym=c("{Allodji, 2015, 26461008}",
 Map(function(x, y) { y[!(y %in% x$Reference)] }, d_RR0_allL, sens_chemo_yes_adjL)
 
 #####---------------------------------------------------------------------------
-## studies with patients with chemotherapy and adjustment for chemo
+## studies with patients with brachytherapy
 sens_brachyL <- list(HaemLym=c("{Storm, 1985, 3932230}",
                                "{Lonn, 2010, 20142245}",
                                "{Boice_NHL, 1988, 3186929}",
@@ -301,24 +301,26 @@ saveRDS(d_ERR_allL, file="d_ERR_allL.rda")
 ## sensitivity: different sets of studies
 #####---------------------------------------------------------------------------
 
+d_ERR_allL <- readRDS("d_ERR_allL.rda")
+
 ## RR
 d_RR_uniqueL        <- Map(function(x, y) { x %>% filter(!(Reference %in% y)) },
                            d_RR_allL, sens_overlappingL)
 
 d_RR_childrenL      <- Map(function(x, y) { x %>% filter(Reference %in% y) },
-                           d_RR_allL, sens_child_onlyL)
+                           d_RR_uniqueL, sens_child_onlyL)
 
 d_RR_adultsL        <- Map(function(x, y) { x %>% filter(Reference %in% y) },
-                           d_RR_allL, sens_adult_onlyL)
+                           d_RR_uniqueL, sens_adult_onlyL)
 
 d_RR_chemo_noL      <- Map(function(x, y) { x %>% filter(Reference %in% y) },
-                           d_RR_allL, sens_chemo_noL)
+                           d_RR_uniqueL, sens_chemo_noL)
 
 d_RR_chemo_yes_adjL <- Map(function(x, y) { x %>% filter(Reference %in% y) },
-                           d_RR_allL, sens_chemo_yes_adjL)
+                           d_RR_uniqueL, sens_chemo_yes_adjL)
 
 d_RR_brachy_noL     <- Map(function(x, y) { x %>% filter(!(Reference %in% y)) },
-                           d_RR0_allL, sens_brachyL)
+                           d_RR_uniqueL, sens_brachyL)
 
 ## ERR
 d_ERR_uniqueL <- Map(function(x, y) {
@@ -329,27 +331,27 @@ d_ERR_uniqueL <- Map(function(x, y) {
 d_ERR_childrenL <- Map(function(x, y) {
     list(d_ERR_long=x$d_ERR_long %>% filter(Reference %in% y),
          d_ERR_wide=x$d_ERR_wide %>% filter(Reference %in% y))
-}, d_ERR_allL, sens_child_onlyL)
+}, d_ERR_uniqueL, sens_child_onlyL)
 
 d_ERR_adultsL <- Map(function(x, y) {
     list(d_ERR_long=x$d_ERR_long %>% filter(Reference %in% y),
          d_ERR_wide=x$d_ERR_wide %>% filter(Reference %in% y))
-}, d_ERR_allL, sens_adult_onlyL)
+}, d_ERR_uniqueL, sens_adult_onlyL)
 
 d_ERR_chemo_noL <- Map(function(x, y) {
     list(d_ERR_long=x$d_ERR_long %>% filter(Reference %in% y),
          d_ERR_wide=x$d_ERR_wide %>% filter(Reference %in% y))
-}, d_ERR_allL, sens_chemo_noL)
+}, d_ERR_uniqueL, sens_chemo_noL)
 
 d_ERR_chemo_yes_adjL <- Map(function(x, y) {
     list(d_ERR_long=x$d_ERR_long %>% filter(Reference %in% y),
          d_ERR_wide=x$d_ERR_wide %>% filter(Reference %in% y))
-}, d_ERR_allL, sens_chemo_yes_adjL)
+}, d_ERR_uniqueL, sens_chemo_yes_adjL)
 
 d_ERR_brachy_noL <- Map(function(x, y) {
     list(d_ERR_long=x$d_ERR_long %>% filter(!(Reference %in% y)),
          d_ERR_wide=x$d_ERR_wide %>% filter(!(Reference %in% y)))
-}, d_ERR_allL, sens_brachyL)
+}, d_ERR_uniqueL, sens_brachyL)
 
 saveRDS(d_RR_uniqueL,         file="d_RR_uniqueL.rda")
 saveRDS(d_ERR_uniqueL,        file="d_ERR_uniqueL.rda")
@@ -366,15 +368,17 @@ saveRDS(d_ERR_brachy_noL,     file="d_ERR_brachy_noL.rda")
 dose_thresh_thyroid <- c(5, 20)
 
 ## 5 Gy
-d_RR_all_thresh05 <- rr_impute_missing(d_RR0_allL$Thyroid) %>%
-    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid[1]))
+d_RR_unique_thresh05 <- rr_impute_missing(d_RR0_allL$Thyroid) %>%
+    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid[1]),
+           !(Reference %in% sens_overlappingL$Thyroid))
 
 ## 20 Gy
-d_RR_all_thresh20 <- rr_impute_missing(d_RR0_allL$Thyroid) %>%
-    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid[2]))
+d_RR_unique_thresh20 <- rr_impute_missing(d_RR0_allL$Thyroid) %>%
+    filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid[2]),
+           !(Reference %in% sens_overlappingL$Thyroid))
 
-d_ERR_thresh05L <- get_all_ERR_from_RR(d_RR_all_thresh05, n_repl=n_repl)
-d_ERR_thresh20L <- get_all_ERR_from_RR(d_RR_all_thresh20, n_repl=n_repl)
+d_ERR_thresh05L <- get_all_ERR_from_RR(d_RR_unique_thresh05, n_repl=n_repl)
+d_ERR_thresh20L <- get_all_ERR_from_RR(d_RR_unique_thresh20, n_repl=n_repl)
 
 ## save
 saveRDS(d_ERR_thresh05L$d_ERR_wide,
