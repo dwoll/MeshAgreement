@@ -162,7 +162,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
 
-## Sensitivity Analyses
 
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```
@@ -208,8 +207,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
-
-## Sensitivity Analyses
 
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```
@@ -323,8 +320,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
 
-## Sensitivity Analyses
-
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```
 
@@ -369,8 +364,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
-
-## Sensitivity Analyses
 
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```
@@ -417,8 +410,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
 
-## Sensitivity Analyses
-
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```
 
@@ -462,8 +453,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
-
-## Sensitivity Analyses
 
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```
@@ -547,8 +536,6 @@ plot_err_org_new(d_ERR_uniqueL[[cancer_site]]$d_ERR_long,
 
 ```{r, child='metaanalysis_child_primary_meta.Rmd'}
 ```
-
-## Sensitivity Analyses
 
 ```{r, child='metaanalysis_child_sensitivity.Rmd'}
 ```

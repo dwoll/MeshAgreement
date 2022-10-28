@@ -39,3 +39,37 @@ if(!inherits(pooled_logRR, "try-error")) {
         select(estimate, ci.lb, ci.ub, Q, Qp, tau2, I2)
 }
 ```
+
+Forest plot
+
+```{r fig.height=5}
+if(!inherits(pooled_logRR, "try-error")) {
+    d_est_ci <- as.data.frame(predict(pooled_logRR)) %>%
+        rename(org_ci_lb=ci.lb,
+               org_ci_ub=ci.ub) %>%
+        mutate(xmin=-0.5,
+               xmax=n()+0.5,
+               join=TRUE)
+    
+    d_l1o <- as.data.frame(l1o) %>%
+        tibble::rownames_to_column(var="Left_out") %>% 
+        mutate(x_num=as.numeric(as.factor(Left_out)),
+               x_num_add=seq(from=min(x_num)-0.5, to=max(x_num)+0.5, length.out=n()),
+               join=TRUE) %>%
+        left_join(d_est_ci, by="join")
+    
+    ggplot(d_l1o) +
+        geom_hline(yintercept=d_est_ci$pred, color="darkgray") +
+        annotate("rect", fill="grey70", alpha=0.5,
+                 xmin=min(d_l1o$x_num_add), xmax=max(d_l1o$x_num_add),
+                 ymin=min(d_l1o$org_ci_lb), ymax=max(d_l1o$org_ci_ub)) +
+        # geom_ribbon(aes(x=x_num_add, ymin=org_ci_lb, ymax=org_ci_ub), fill="grey70", alpha=0.5) +
+        geom_point(aes(x=x_num, y=estimate)) +
+        geom_linerange(aes(x=x_num, ymin=ci.lb, ymax=ci.ub)) +
+        scale_x_continuous(breaks=d_l1o$x_num, labels=d_l1o$Left_out) +
+        xlab("Without study") +
+        ylab("Pooled ERR/Gy RE model") +
+        coord_flip() +
+        ggpt
+}
+```

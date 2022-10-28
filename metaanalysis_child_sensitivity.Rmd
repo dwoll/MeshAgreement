@@ -1,3 +1,4 @@
+## Sensitivity Analyses
 ### Linear uncorrelated model (Little 2001)
 
 Relevant for studies with only category-specific RRs
@@ -41,6 +42,65 @@ d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
 # child='metaanalysis_child_meta.Rmd'
 ```
 
+### Pooled ERR on original scale (gls)
+
+```{r}
+meta_type <- "sens_org_scale"
+d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI
+           used    =get_used(ERR_org, ERR_gls, ERR_lm),
+           ERR     =coalesce(ERR_org,       ERR_gls,       ERR_lm),
+           ERR_CIlo=coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
+           ERR_CIup=coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
+           ERR_SE  =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm))
+```
+
+```{r}
+pooled_ERR   <- get_ERR_pooled(d_ERR_wide_ma)
+ma_weights   <- weights(pooled_ERR)
+d_ma_weights <- data.frame(auth_year=names(ma_weights),
+                           weight=unname(ma_weights))
+    
+d_ERR_out <- d_ERR_wide_ma %>%
+    mutate(site=cancer_site) %>%
+    left_join(d_ma_weights, by="auth_year") %>%
+    select(site, auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE, weight, used)
+
+d_ERR_out
+```
+
+Metaanalysis: pooled ERR
+
+```{r}
+pooled_ERR
+```
+
+Prediction interval
+
+```{r}
+ci_pred <- predict(pooled_ERR, pi.type="riley")
+ci_pred
+```
+
+```{r}
+assign(paste0("d_ERR_", cancer_site), d_ERR_out %>% mutate(site=cancer_site))
+assign(paste0("d_meta_", cancer_site, "_", meta_type),
+       data.frame(site=cancer_site,
+                  type=meta_type,
+                  tau2=pooled_logRR$tau2,
+                  # tau2_se=pooled_logRR$se.tau2,
+                  I2=pooled_logRR$I2,
+                  H2=pooled_logRR$H2,
+                  Q=pooled_logRR$QE,
+                  Q_pval=pooled_logRR$QEp,
+                  ERR=ci_pred$pred,
+                  ERR_CIlo=ci_pred$ci.lb,
+                  ERR_CIup=ci_pred$ci.ub,
+                  ERR_PIlo=ci_pred$pi.lb,
+                  ERR_PIup=ci_pred$pi.ub))
+```
+
+## Subgroup analyses
 ### Use all studies, including overlapping data
 
 Also including studies
@@ -160,56 +220,4 @@ d_ERR_wide_ma <- d_ERR_brachy_noL[[cancer_site]]$d_ERR_wide %>%
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
-```
-
-### Pooled ERR on original scale (gls)
-
-```{r}
-meta_type <- "sens_org_scale"
-d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
-    mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used    =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR     =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo=coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup=coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE  =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm))
-```
-
-```{r}
-d_ERR_out <- d_ERR_wide_ma %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE, used)
-
-d_ERR_out
-```
-
-Metaanalysis: pooled ERR
-
-```{r}
-pooled_ERR <- get_ERR_pooled(d_ERR_wide_ma)
-pooled_ERR
-```
-
-Prediction interval
-
-```{r}
-ci_pred <- predict(pooled_ERR, pi.type="riley")
-ci_pred
-```
-
-```{r}
-assign(paste0("d_ERR_", cancer_site), d_ERR_out %>% mutate(site=cancer_site))
-assign(paste0("d_meta_", cancer_site, "_", meta_type),
-       data.frame(site=cancer_site,
-                  type=meta_type,
-                  tau2=pooled_logRR$tau2,
-                  # tau2_se=pooled_logRR$se.tau2,
-                  I2=pooled_logRR$I2,
-                  H2=pooled_logRR$H2,
-                  Q=pooled_logRR$QE,
-                  Q_pval=pooled_logRR$QEp,
-                  ERR=ci_pred$pred,
-                  ERR_CIlo=ci_pred$ci.lb,
-                  ERR_CIup=ci_pred$ci.ub,
-                  ERR_PIlo=ci_pred$pi.lb,
-                  ERR_PIup=ci_pred$pi.ub))
 ```

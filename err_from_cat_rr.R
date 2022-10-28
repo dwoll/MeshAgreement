@@ -101,7 +101,6 @@ sens_child_onlyL <- list(HaemLym=c("{Allodji, 2015, 26461008}",
                                    "{Neglia, 2006, 17077355}",
                                    "{Svahn-Tapper, 2006, 16760180}",
                                    "{Taylor, 2010, 21079138}",
-                                   "{Lindberg, 1995, 7576739}",
                                    "{Schonfeld, 2020, 31794291}"))
 
 ## check that manuscript identifiers match those used in data Excel table
@@ -174,7 +173,7 @@ sens_chemo_noL <- list(HaemLym=c("{Storm, 1985, 3932230}",
                                  "{Lonn_Rectum, 2010, 20142245}"),
                        Thyroid=c("{Boice, 1988, 3186929}",
                                  "{RubinoB, 2003, 14566829}"),
-                       Brain  =c("{Lindberg, 1995, 7576739}"))
+                       Brain  =c())
 
 ## check that manuscript identifiers match those used in data Excel table
 Map(function(x, y) { y[!(y %in% x$Reference)] }, d_RR0_allL, sens_chemo_noL)
@@ -268,7 +267,7 @@ sens_brachyL <- list(HaemLym=c("{Storm, 1985, 3932230}",
                      Thyroid=c("{Boice, 1988, 3186929}",
                                "{Lonn, 2010, 20142245}",
                                "{Veiga, 2012, 22857014}"),
-                     Brain  =c("{Lindberg, 1995, 7576739}"))
+                     Brain  =c())
 
 ## check that manuscript identifiers match those used in data Excel table
 Map(function(x, y) { y[!(y %in% x$Reference)] }, d_RR0_allL, sens_brachyL)

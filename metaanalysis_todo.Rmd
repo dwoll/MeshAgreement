@@ -27,11 +27,9 @@ options(replace.assign=TRUE,
 output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
 ```
 
-# Documentation of Methods
-
-  * Prefer adjusted over unadjusted models
-  * No pooling of linear-exponential, quadratic, linear-quadratic models
-  * Use ERR SD if provided when ERR 95% CI not provided
+Lung -> log vs. original scale
+York regression
+Orsini multi-level
 
 # All Sites
 

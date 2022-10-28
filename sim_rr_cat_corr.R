@@ -1,5 +1,12 @@
-## simulate category RRs from continuous dose-response
-## -> estimate correlation due to same reference group
+#####---------------------------------------------------------------------------
+#####---------------------------------------------------------------------------
+## Daniel Wollschlaeger <wollschlaeger@uni-mainz.de>
+## 2022-10-21
+## simulate category RRs from continuous dose-response relationships
+## in order to estimate the correlation between RR estimates due to
+## same reference group
+#####---------------------------------------------------------------------------
+#####---------------------------------------------------------------------------
 
 sim_1 <- function(n_obs=1000,
                   ERR=0.1,
@@ -8,7 +15,6 @@ sim_1 <- function(n_obs=1000,
                   meanlog_dose=1,
                   sdlog_dose=1,
                   sdlog_RR=0.6) {
-    # browser()
     dose_all <- rlnorm(n_obs, meanlog=meanlog_dose, sdlog=sdlog_dose)
     dose     <- dose_all[dose_all <= max(dose_range)]
     dose_cat <- cut(dose, breaks=c(-Inf,
@@ -30,7 +36,7 @@ sim_1 <- function(n_obs=1000,
     coef(fit_glm)[-1]
 }
 
-sims <- replicate(1000, sim_1())
+sims    <- replicate(1000, sim_1())
 cor_mat <- cor(t(sims))
 dimnames(cor_mat) <- list(paste("dcat", 1:5, sep="_"),
                           paste("dcat", 1:5, sep="_"))
