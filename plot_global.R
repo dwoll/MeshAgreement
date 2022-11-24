@@ -103,11 +103,20 @@ plot_err_org_new <- function(x, ylim, lpos, show=TRUE) {
 #####---------------------------------------------------------------------------
 
 plot_meta_results <- function(x, show=TRUE) {
-    p <- ggplot(x,
+    d_ref_line <- x %>%
+        filter(type == "primary") %>%
+        select(site, ERR) %>%
+        rename(ref_line=ERR)
+    
+    d_plot <- x %>%
+        left_join(d_ref_line, by="site")
+    
+    p <- ggplot(d_plot,
                aes(x=type, y=ERR, ymin=ERR_CIlo, ymax=ERR_CIup, color=type)) +
+        geom_hline(yintercept=0, col="gray") +
+        geom_hline(aes(yintercept=ref_line), col="darkgray", size=0.7) +
         geom_point(position=position_dodge(width=0.3)) +
         geom_linerange(position=position_dodge(width=0.3)) +
-        geom_hline(yintercept=0, col="darkgray") +
         xlab("Metaanalysis type") +
         ylab(expression(paste('ERR ', Gy^-1, ' with 95% CI'))) +
         # scale_y_log10() +

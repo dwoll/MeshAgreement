@@ -27,14 +27,8 @@ options(replace.assign=TRUE,
 output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
 ```
 
-Lung -> log vs. original scale
-York regression
-Orsini multi-level
-
 # All Sites
 
-  * Don't show sensitivity analyses that do not apply, e.g., brain: lm vs. gls (only studies with ERR/Gy anyway)
-  * Implement Richardson et al. 2020 Metaanalysis Methods (https://doi.org/10.1007/s00411-020-00863-w)
   * Investigate bias when estimating ERR/Gy from dose-category-specific RRs due to uncertainty in category representative (mean) dose? (suggestion David P)
       * Compare ERR/Gy estimates from dose-category-specific RRs to original ERR/Gy from same studies
       * For studies with known per-category mean dose, compare to results from choosing boundary mid-points

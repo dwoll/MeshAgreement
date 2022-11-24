@@ -20,7 +20,6 @@
 
 library(dplyr)
 library(boot)
-library(metafor)
 library(nlme)
 library(mvtnorm)
 
@@ -488,26 +487,6 @@ lognorm_log_to_org <- function(meanlog, sdlog) {
 lognorm_org_to_log <- function(mu, sigma) {
     list(meanlog=      2*log(mu) - 0.5*log(sigma^2 + mu^2),
          sdlog  =sqrt(-2*log(mu) +     log(sigma^2 + mu^2)))
-}
-
-## pooled logRR from random-effects meta-analysis
-## assume log-normal distribution for ERR+1
-get_logRR_pooled <- function(x) {
-    try(rma.uni(log(ERR+1),
-                sei=ERR_SE_meta,
-                method="REML",
-                data=x,
-                slab=auth_year))
-}
-
-## pooled ERR from random-effects meta-analysis
-## assume normal distribution for ERR
-get_ERR_pooled <- function(x) {
-    rma.uni(ERR,
-            sei=ERR_SE,
-            method="REML",
-            data=x,
-            slab=auth_year)
 }
 
 #####---------------------------------------------------------------------------

@@ -6,40 +6,15 @@ Relevant for studies with only category-specific RRs
 ```{r}
 meta_type <- "sens_uncorr"
 d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
-    mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used       =get_used(ERR_org, rep(NA_real_, n()), ERR_lm),
-           ERR        =coalesce(ERR_org,         ERR_lm),
-           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_lm),
-           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_lm),
-           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_lm))
+    mutate(## take original ERR+CI if available, else use estimated ERR+CI from lm
+           used       =get_used(ERR_org, val_gls=rep(NA_real_, n()), val_lm=ERR_lm,  val_ext=ERR_ext),
+           ERR        =coalesce(ERR_org,                             ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,                        ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,                        ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org,                     ERR_SE_meta_lm, ERR_SE_meta_ext))
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
-```
-
-```{r eval=FALSE}
-### Synthetic single ERR estimate from all studies with category RRs
-# meta_type <- "sens_synth1"
-# d_ERR_from_RRs <- get_single_ERR_from_RRs(d_RR_uniqueL[[cancer_site]],
-#                                           cor_intra=0.5,
-#                                           CI_width=0.95)
-```
-
-```{r eval=FALSE}
-## pool estimates
-# d_ERR_org <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
-#     filter(!is.na(ERR_org)) %>%
-#     mutate(ERR        =ERR_org,
-#            ERR_CIlo   =ERR_CIlo_org,
-#            ERR_CIup   =ERR_CIup_org,
-#            ERR_SE_meta=ERR_SE_meta_org,
-#            used="org")
-# 
-# d_ERR_wide_ma <- bind_rows(d_ERR_org, d_ERR_from_RRs)
-```
-
-```{r eval=FALSE}
-# child='metaanalysis_child_meta.Rmd'
 ```
 
 ### Pooled ERR on original scale (gls)
@@ -48,11 +23,11 @@ d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
 meta_type <- "sens_org_scale"
 d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used    =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR     =coalesce(ERR_org,       ERR_gls,       ERR_lm),
-           ERR_CIlo=coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm),
-           ERR_CIup=coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm),
-           ERR_SE  =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm))
+           used    =get_used(ERR_org,       ERR_gls,       ERR_lm,      ERR_ext),
+           ERR     =coalesce(ERR_org,       ERR_gls,       ERR_lm,      ERR_ext),
+           ERR_CIlo=coalesce(ERR_CIlo_org,  ERR_CIlo_gls,  ERR_CIlo_lm, ERR_CIlo_ext),
+           ERR_CIup=coalesce(ERR_CIup_org,  ERR_CIup_gls,  ERR_CIup_lm, ERR_CIup_ext),
+           ERR_SE  =coalesce(ERR_SE_org,    ERR_SE_gls,    ERR_SE_lm,   ERR_SE_ext))
 ```
 
 ```{r}
@@ -64,9 +39,9 @@ d_ma_weights <- data.frame(auth_year=names(ma_weights),
 d_ERR_out <- d_ERR_wide_ma %>%
     mutate(site=cancer_site) %>%
     left_join(d_ma_weights, by="auth_year") %>%
-    select(site, auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE, weight, used)
+    select(site, auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE, weight, used)
 
-d_ERR_out
+d_ERR_out %>% select(-Study)
 ```
 
 Metaanalysis: pooled ERR
@@ -114,12 +89,13 @@ setdiff(d_RR_allL[[cancer_site]]$auth_year,
 ```{r}
 d_ERR_wide_ma <- d_ERR_allL[[cancer_site]]$d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
-           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
-           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm),
-           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm),
-           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm)) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+           used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(used != "none") %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -130,13 +106,30 @@ d_ERR_wide_ma <- d_ERR_allL[[cancer_site]]$d_ERR_wide %>%
 ```{r}
 meta_type <- "sens_only_org"
 d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
-    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
+    mutate(used       =get_used(ERR_org, val_gls=NA_real_, val_lm=NA_real_, val_ext=NA_real_),
            ERR        =ERR_org,
            ERR_CIlo   =ERR_CIlo_org,
            ERR_CIup   =ERR_CIup_org,
            ERR_SE_meta=ERR_SE_meta_org) %>%
     filter(used == "org") %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+```
+
+```{r, child='metaanalysis_child_meta.Rmd'}
+```
+
+### Use only studies without external comparison
+
+```{r}
+meta_type <- "sens_ext_no"
+d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
+    mutate(used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(!(used %in% c("ext", "none"))) %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -147,12 +140,13 @@ d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
 ```{r}
 meta_type <- "sens_children"
 d_ERR_wide_ma <- d_ERR_childrenL[[cancer_site]]$d_ERR_wide %>%
-    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR        =ERR_org,
-           ERR_CIlo   =ERR_CIlo_org,
-           ERR_CIup   =ERR_CIup_org,
-           ERR_SE_meta=ERR_SE_meta_org) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+    mutate(used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(used != "none") %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -163,12 +157,13 @@ d_ERR_wide_ma <- d_ERR_childrenL[[cancer_site]]$d_ERR_wide %>%
 ```{r}
 meta_type <- "sens_adults"
 d_ERR_wide_ma <- d_ERR_adultsL[[cancer_site]]$d_ERR_wide %>%
-    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR        =ERR_org,
-           ERR_CIlo   =ERR_CIlo_org,
-           ERR_CIup   =ERR_CIup_org,
-           ERR_SE_meta=ERR_SE_meta_org) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+    mutate(used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(used != "none") %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -179,12 +174,13 @@ d_ERR_wide_ma <- d_ERR_adultsL[[cancer_site]]$d_ERR_wide %>%
 ```{r}
 meta_type <- "sens_chemo_no"
 d_ERR_wide_ma <- d_ERR_chemo_noL[[cancer_site]]$d_ERR_wide %>%
-    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR        =ERR_org,
-           ERR_CIlo   =ERR_CIlo_org,
-           ERR_CIup   =ERR_CIup_org,
-           ERR_SE_meta=ERR_SE_meta_org) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+    mutate(used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(used != "none") %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -195,12 +191,13 @@ d_ERR_wide_ma <- d_ERR_chemo_noL[[cancer_site]]$d_ERR_wide %>%
 ```{r}
 meta_type <- "sens_chemo_yes_adj"
 d_ERR_wide_ma <- d_ERR_chemo_yes_adjL[[cancer_site]]$d_ERR_wide %>%
-    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR        =ERR_org,
-           ERR_CIlo   =ERR_CIlo_org,
-           ERR_CIup   =ERR_CIup_org,
-           ERR_SE_meta=ERR_SE_meta_org) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+    mutate(used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(used != "none") %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -211,12 +208,13 @@ d_ERR_wide_ma <- d_ERR_chemo_yes_adjL[[cancer_site]]$d_ERR_wide %>%
 ```{r}
 meta_type <- "sens_brachy_no"
 d_ERR_wide_ma <- d_ERR_brachy_noL[[cancer_site]]$d_ERR_wide %>%
-    mutate(used       =get_used(ERR_org, ERR_gls, ERR_lm),
-           ERR        =ERR_org,
-           ERR_CIlo   =ERR_CIlo_org,
-           ERR_CIup   =ERR_CIup_org,
-           ERR_SE_meta=ERR_SE_meta_org) %>%
-    select(auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
+    mutate(used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    filter(used != "none") %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}

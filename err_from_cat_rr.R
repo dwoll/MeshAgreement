@@ -281,6 +281,18 @@ d_RR_allL <- Map(rr_impute_missing, d_RR0_allL)
 d_RR_allL$Thyroid <- d_RR_allL$Thyroid %>%
     filter(is.na(d_kPrime) | (d_kPrime < dose_thresh_thyroid))
 
+## check that ERR/Gy point estimate is in CI
+lapply(d_RR_allL, function(d) {
+    d_err <- d %>%
+        select(ERR, ERR_CIlo, ERR_CIup) %>%
+        filter(!is.na(ERR))
+    
+    with(d_err, all((ERR > ERR_CIlo) & (ERR < ERR_CIup)))
+})
+
+d_RR_allL$Thyroid %>%
+    filter(!((ERR > ERR_CIlo) & (ERR < ERR_CIup)))
+
 #####---------------------------------------------------------------------------
 ## save to file
 saveRDS(d_RR0_allL, file="d_RR0_allL.rda")
@@ -290,7 +302,7 @@ saveRDS(d_RR_allL,  file="d_RR_allL.rda")
 ## run this chunk by hand to re-do estimating ERR/Gy + CI from category RRs
 #####---------------------------------------------------------------------------
 
-n_repl     <- 5000
+n_repl     <- 50#00
 d_RR0_allL <- readRDS("d_RR0_allL.rda")
 d_RR_allL  <- readRDS("d_RR_allL.rda")
 d_ERR_allL <- Map(get_all_ERR_from_RR, d_RR_allL, n_repl=n_repl)

@@ -5,15 +5,31 @@ pooled_logRR <- get_logRR_pooled(d_ERR_wide_ma)
 
 if(!inherits(pooled_logRR, "try-error")) {
     pooled_logRR_out <- pooled_logRR
+    
+    ## add weigths
+    ## consider that there may be fewer weights than
+    ## rows due to studies with missings that are not pooled
     ma_weights       <- weights(pooled_logRR)
     d_ma_weights     <- data.frame(auth_year=names(ma_weights),
                                    weight=unname(ma_weights))
     
-    d_ERR_out <- d_ERR_wide_ma %>%
-        mutate(site=cancer_site) %>%
-        left_join(d_ma_weights, by="auth_year") %>%
-        select(site, auth_year, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, weight, used) %>%
-        rename(ERR_SE=ERR_SE_meta)
+    names_org <- stringr::str_remove(names(ma_weights), "\\.[[:digit:]]{1}")
+    ma_weights_ok <- (length(ma_weights) == nrow(d_ERR_wide_ma)) &&
+                     all(names_org       == d_ERR_wide_ma$auth_year)
+    
+    if((cancer_site == "all_solid") && (ma_weights_ok)) {
+        d_ERR_out <- d_ERR_wide_ma %>%
+            mutate(site=cancer_site,
+                   weight=unname(weights(pooled_logRR))) %>%
+            select(site, auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, weight, used) %>%
+            rename(ERR_SE=ERR_SE_meta)
+    } else {
+        d_ERR_out <- d_ERR_wide_ma %>%
+            mutate(site=cancer_site) %>%
+            left_join(d_ma_weights, by="auth_year") %>%
+            select(site, auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, weight, used) %>%
+            rename(ERR_SE=ERR_SE_meta)
+    }
 } else {
     pooled_logRR_out <- data.frame(tau2=NA_real_,
                                    se.tau2=NA_real_,
@@ -24,6 +40,7 @@ if(!inherits(pooled_logRR, "try-error")) {
 
     d_ERR_out <- data.frame(site=cancer_site,
                             auth_year=NA_character_,
+                            Study=NA_character_,
                             ERR=NA_real_,
                             ERR_CIlo=NA_real_,
                             ERR_CIup=NA_real_,
@@ -32,11 +49,14 @@ if(!inherits(pooled_logRR, "try-error")) {
                             used="none")
 }
 
-if(meta_type != "special") { d_ERR_out %>% select(-site) }
+# if(meta_type != "special") {
+    d_ERR_out %>% select(-site, -Study)
+# }
+
 pooled_logRR_out
 ```
 
-Metanalysis: Pooled ERR = exp(logRR) - 1
+Metaanalysis: Pooled ERR = exp(logRR) - 1
 
 ```{r}
 ci_pred <- if(!inherits(pooled_logRR, "try-error")) {

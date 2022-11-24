@@ -3,11 +3,12 @@ meta_type <- "primary"
 
 d_ERR_wide_ma <- d_ERR_uniqueL[[cancer_site]]$d_ERR_wide %>%
     mutate(## take original ERR+CI if available, else use estimated ERR+CI
-           used       =get_used(ERR_org,         ERR_gls,         ERR_lm),
-           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm),
-           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm),
-           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm),
-           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm))
+           used       =get_used(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR        =coalesce(ERR_org,         ERR_gls,         ERR_lm,         ERR_ext),
+           ERR_CIlo   =coalesce(ERR_CIlo_org,    ERR_CIlo_gls,    ERR_CIlo_lm,    ERR_CIlo_ext),
+           ERR_CIup   =coalesce(ERR_CIup_org,    ERR_CIup_gls,    ERR_CIup_lm,    ERR_CIup_ext),
+           ERR_SE_meta=coalesce(ERR_SE_meta_org, ERR_SE_meta_gls, ERR_SE_meta_lm, ERR_SE_meta_ext)) %>%
+    select(auth_year, Study, ERR, ERR_CIlo, ERR_CIup, ERR_SE_meta, used)
 ```
 
 ```{r, child='metaanalysis_child_meta.Rmd'}
@@ -25,7 +26,10 @@ Forest plot
 
 ```{r fig.height=5}
 if(!inherits(pooled_logRR, "try-error")) {
-    forest(pooled_logRR, atransf=transf_logRR_to_ERR)
+    forest(pooled_logRR,
+           xlab="ERR/Gy + 95% CI",
+           at=prime_forest_breaks[[cancer_site]],
+           atransf=transf_logRR_to_ERR)
 }
 ```
 
@@ -44,7 +48,7 @@ Forest plot
 
 ```{r fig.height=5}
 if(!inherits(pooled_logRR, "try-error")) {
-    d_est_ci <- as.data.frame(predict(pooled_logRR)) %>%
+    d_est_ci <- as.data.frame(predict(pooled_logRR, transf=transf_logRR_to_ERR, pi.type="riley")) %>%
         rename(org_ci_lb=ci.lb,
                org_ci_ub=ci.ub) %>%
         mutate(xmin=-0.5,
@@ -59,7 +63,7 @@ if(!inherits(pooled_logRR, "try-error")) {
         left_join(d_est_ci, by="join")
     
     ggplot(d_l1o) +
-        geom_hline(yintercept=d_est_ci$pred, color="darkgray") +
+        geom_hline(yintercept=d_est_ci$pred, size=1, color="darkgray") +
         annotate("rect", fill="grey70", alpha=0.5,
                  xmin=min(d_l1o$x_num_add), xmax=max(d_l1o$x_num_add),
                  ymin=min(d_l1o$org_ci_lb), ymax=max(d_l1o$org_ci_ub)) +
@@ -67,6 +71,7 @@ if(!inherits(pooled_logRR, "try-error")) {
         geom_point(aes(x=x_num, y=estimate)) +
         geom_linerange(aes(x=x_num, ymin=ci.lb, ymax=ci.ub)) +
         scale_x_continuous(breaks=d_l1o$x_num, labels=d_l1o$Left_out) +
+        scale_y_continuous(breaks=loo_forest_breaks[[cancer_site]]) +
         xlab("Without study") +
         ylab("Pooled ERR/Gy RE model") +
         coord_flip() +
