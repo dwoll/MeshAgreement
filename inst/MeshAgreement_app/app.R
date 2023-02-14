@@ -147,7 +147,7 @@ shiny::shinyApp(
                             pois_spacing <- if(!is.null(input$read_mesh_reconstruct_pois_method) &&
                                                (input$read_mesh_reconstruct_pois_method == "knn")) {
                                 k <- round(input$read_mesh_reconstruct_pois_spacing)
-                                stopifnot(k > 0)
+                                stopifnot(k >= 2)
                                 paste0("ave(", k, ")")
                             } else {
                                 val <- input$read_mesh_reconstruct_pois_spacing
@@ -155,12 +155,22 @@ shiny::shinyApp(
                                 val
                             }
                             
-                            argL <- list(x           =f_files,
-                                         name        =f_names,
-                                         fix_issues  =input$read_mesh_fix_issues,
-                                         reconstruct =input$read_mesh_reconstruct,
-                                         jetSmoothing=afs_jetsm_int,
-                                         spacing     =pois_spacing)
+                            argL <- list(x              =f_files,
+                                         name           =f_names,
+                                         fix_issues     =input$read_mesh_fix_issues,
+                                         reconstruct    =input$read_mesh_reconstruct,
+                                         jetSmoothing   =afs_jetsm_int,
+                                         scaleIterations=input$read_mesh_reconstruct_sss_scit,
+                                         neighbors      =inputread_mesh_reconstruct_sss_neigh,
+                                         samples        =input$read_mesh_reconstruct_sss_smpls,
+                                         separateShells =input$read_mesh_reconstruct_sss_sshell,
+                                         forceManifold  =input$read_mesh_reconstruct_sss_fmanif,
+                                         borderAngle    =input$read_mesh_reconstruct_sss_angle,
+                                         # normals="jet(12)", ## TODO
+                                         spacing        =pois_spacing,
+                                         sm_angle       =input$read_mesh_reconstruct_pois_smang,
+                                         sm_radius      =input$read_mesh_reconstruct_pois_smrad,
+                                         sm_distance    =input$read_mesh_reconstruct_pois_smdst)
                             
                             do.call("read_mesh_obs", Filter(Negate(is.null), argL))
                         } else {
@@ -309,6 +319,33 @@ shiny::shinyApp(
                 NULL
             }
         })
+        output$ui_surface_recon_sss_opts <- renderUI({
+            if(!is.null(input$meshes_input_source) &&
+               !is.null(input$read_mesh_reconstruct) &&
+               (input$meshes_input_source == "file") &&
+               (input$read_mesh_reconstruct == "SSS")) {
+                tagList(numericInput("read_mesh_reconstruct_sss_scit",
+                                     "Scale Iterations",
+                                    value=1, min=1, step=1),
+                        numericInput("read_mesh_reconstruct_sss_neigh",
+                                     "Neighbors",
+                                     value=12, min=1, step=1),
+                        numericInput("read_mesh_reconstruct_sss_smpls",
+                                     "Samples",
+                                     value=300, min=1, step=1),
+                        checkboxInput("read_mesh_reconstruct_sss_sshell",
+                                      "Separate Shells",
+                                      value=FALSE),
+                        checkboxInput("read_mesh_reconstruct_sss_fmanif",
+                                      "Force Manifold",
+                                      value=TRUE),
+                        numericInput("read_mesh_reconstruct_sss_angle",
+                                     "Border Angle",
+                                     value=45, step=1))
+            } else {
+                NULL
+            }
+        })
         output$ui_surface_recon_pois_method <- renderUI({
             if(!is.null(input$meshes_input_source) &&
                !is.null(input$read_mesh_reconstruct) &&
@@ -323,22 +360,40 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_pois_spacing <- renderUI({
+        output$ui_surface_recon_pois_opts <- renderUI({
             if(!is.null(input$meshes_input_source) &&
                !is.null(input$read_mesh_reconstruct) &&
                (input$meshes_input_source == "file") &&
                (input$read_mesh_reconstruct == "Poisson") &&
                !is.null(input$read_mesh_reconstruct_pois_method)) {
-                default_value <- if(input$read_mesh_reconstruct_pois_method == "knn") {
-                    12
+                if(input$read_mesh_reconstruct_pois_method == "knn") {
+                    spacing_default <- 12
+                    spacing_min     <- 2
+                    spacing_step    <- 1
                 } else {
-                    2
+                    spacing_min     <- 0.001
+                    spacing_default <- 2
+                    spacing_step    <- 0.1
                 }
-                
-                numericInput("read_mesh_reconstruct_pois_spacing",
-                             "Spacing parameter",
-                             min=0.001,
-                             value=default_value)
+                ## TODO
+                ## normals
+                tagList(numericInput("read_mesh_reconstruct_pois_spacing",
+                                     "Spacing Parameter",
+                                     min=spacing_min,
+                                     value=spacing_default,
+                                     step=spacing_step),
+                        numericInput("read_mesh_reconstruct_pois_smang",
+                                     "SM Angle",
+                                     min=0,
+                                     value=20),
+                        numericInput("read_mesh_reconstruct_pois_smrad",
+                                     "SM Radius",
+                                     min=0,
+                                     value=30),
+                        numericInput("read_mesh_reconstruct_pois_smdst",
+                                     "SM Distance",
+                                     min=0,
+                                     value=0.375))
             } else {
                 NULL
             }

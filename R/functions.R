@@ -106,7 +106,7 @@ read_mesh_one <- function(x,
         basename(file_path_sans_ext(name))
     }
     
-    mesh <- cgalMesh$new(x)
+    mesh <- cgalMesh$new(x, clean=fix_issues)
     
     if(reconstruct != "no") {
         mesh_r <- reconstruct_mesh(mesh,
@@ -357,8 +357,14 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
 ## union and intersection for list of two meshes x
 get_mesh_ui_pair <- function(x, boov=FALSE) {
     if(!boov) {
-        m_union     <- try(x[["mesh_1"]][["mesh"]]$union(       x[["mesh_2"]][["mesh"]]))
-        m_intersect <- try(x[["mesh_1"]][["mesh"]]$intersection(x[["mesh_2"]][["mesh"]]))
+        ## make copies because union() and intersection()
+        ## are mutating
+        m1_copy1    <- x[["mesh_1"]][["mesh"]]$copy()
+        m1_copy2    <- x[["mesh_1"]][["mesh"]]$copy()
+        m2_copy1    <- x[["mesh_2"]][["mesh"]]$copy()
+        m2_copy2    <- x[["mesh_2"]][["mesh"]]$copy()
+        m_union     <- try(m1_copy1$union(       m2_copy1))
+        m_intersect <- try(m1_copy2$intersection(m2_copy2))
         ui_ok       <- !(inherits(m_union,     "try-error") ||
                          inherits(m_intersect, "try-error"))
     } else {
