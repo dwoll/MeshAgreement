@@ -132,8 +132,9 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
        
     vol_0 <- try(mesh$volume())
     ctr_0 <- try(mesh$centroid())
+    
     vol <- if(!inherits(vol_0, "try-error")) {
-        abs(vol_0)
+        vol_0
     } else {
         NA_real_
     }
@@ -343,16 +344,20 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
         vol_u_0 <- try(m_union$volume())
         vol_i_0 <- try(m_intersect$volume())
         
-        vol_u <- if(inherits(vol_u_0, "try-error") || is.na(vol_u_0)) {
-            NA_real_
+        if(inherits(vol_u_0, "try-error")         ||
+           inherits(vol_i_0, "try-error")         ||
+           is.na(vol_u_0)                         ||
+           is.na(vol_i_0)                         ||
+           (vol_u_0 <= 0)                         ||
+           (vol_i_0 <= 0)                         ||
+           (vol_u_0 <= x[["mesh_1"]][["volume"]]) ||
+           (vol_u_0 <= x[["mesh_2"]][["volume"]])) {
+            warning("Union / intersection volume could not be determined")
+            vol_u <- NA_real_
+            vol_i <- NA_real_
         } else {
-            vol_u_0
-        }
-
-        vol_i <- if(inherits(vol_i_0, "try-error") || is.na(vol_i_0)) {
-            NA_real_
-        } else {
-            vol_i_0
+            vol_u <- vol_u_0
+            vol_i <- vol_i_0
         }
     }
     
