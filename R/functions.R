@@ -134,6 +134,10 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
     ctr_0 <- try(mesh$centroid())
     
     vol <- if(!inherits(vol_0, "try-error")) {
+        if(vol_0 <= 0) {
+            vol_0 <- mesh$orientToBoundVolume()
+        }
+        
         vol_0
     } else {
         NA_real_
