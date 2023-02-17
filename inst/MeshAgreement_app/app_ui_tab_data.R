@@ -42,7 +42,7 @@ fluidPage(
                 maximizable=FALSE,
                 collapsible=FALSE,
                 uiOutput("ui_ranklist_files"),
-                DT::dataTableOutput("ui_compare_table")
+                DT::dataTableOutput("table_ui_compare")
             )
         )
     ),
@@ -57,12 +57,12 @@ fluidPage(
                 maximizable=FALSE,
                 collapsible=FALSE,
                 p("Note: If information on mesh volume and mesh centroid are missing ('NA'), the mesh is not proper.",
-                  "This means that the mesh may not be closed, may not bound a volume, or may have self-intersections.",
+                  "This means that the mesh may not be closed, may not bound a volume, may have self-intersections, or may contain duplicated faces.",
                   "Some agreement measures will then be unavailable.",
                   "Ticking the 'fix mesh issues' box or using surface reconstruction on import may help.",
                   "Otherwise, inspection of the mesh with a tool such as",
                   tags$a(href="https://www.meshlab.net/", "MeshLab"), "is advised."),
-                DT::dataTableOutput("print_mesh_info")
+                DT::dataTableOutput("table_mesh_info")
             )
         )
     )

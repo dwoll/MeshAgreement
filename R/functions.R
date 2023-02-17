@@ -14,89 +14,66 @@ get_name_elem <- function(x, which=1L, sep=" <-> ") {
 
 reconstruct_mesh <- function(x,
                              method=c("No", "AFS", "SSS", "Poisson"),
-                             jetSmoothing=NULL,
-                             scaleIterations=1,
-                             neighbors=12,
-                             samples=300,
-                             separateShells=FALSE,
-                             forceManifold=TRUE,
-                             borderAngle=45,
-                             normals="jet(12)",
-                             spacing="ave(12)",
-                             sm_angle=20,
-                             sm_radius=30,
-                             sm_distance=0.375) {
+                             ...) {
     method <- match.arg(tolower(method),
                         choices=c("no", "afs", "sss", "poisson"))
     
     ## check functions available in cgalMeshes version
-    cgalMeshes_has     <- ls(getNamespace("cgalMeshes"), all.names=TRUE)
-    cgalMeshes_version <- packageVersion("cgalMeshes")
-    cgalMeshes_atleast110 <- compareVersion("1.1.0", as.character(cgalMeshes_version))
+    cgalMeshes_has        <- ls(getNamespace("cgalMeshes"), all.names=TRUE)
+    cgalMeshes_version    <- packageVersion("cgalMeshes")
+    cgalMeshes_atleast110 <- compareVersion("1.0.0.1", as.character(cgalMeshes_version))
     
+    ## ... as of cgalMeshes v1.1.0
+    args_recon <- list(afs    =c("jetSmoothing"),
+                       sss    =c("scaleIterations", "neighbors", "samples", "separateShells", "forceManifold", "borderAngle"),
+                       poisson=c("normals", "spacing", "sm_angle", "sm_radius", "sm_distance"))
+    
+    dotsL     <- list(...)
+    dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
+
     if(method == "afs") {
         if(cgalMeshes_atleast110 <= 0) {
-            AFSreconstruction(x$getVertices(),
-                              jetSmoothing=jetSmoothing) # for cgalMeshes 1.1.0
+            argL <- c(list(points=x$getVertices()), dotsL_sub)
+            do.call("AFSreconstruction", argL)
         } else {
             AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
         }
     } else if(method == "sss") {
         if("SSSreconstruction" %in% cgalMeshes_has) {
-            cgalMeshes::SSSreconstruction(x$getVertices(),
-                                          scaleIterations=scaleIterations,
-                                          neighbors=neighbors,
-                                          samples=samples,
-                                          separateShells=separateShells,
-                                          forceManifold=forceManifold,
-                                          borderAngle=borderAngle)
+            argL <- c(list(points=x$getVertices()), dotsL_sub)
+            do.call("SSSreconstruction", argL)
         } else {
             warning("SSS reconstruction not implemented. Using AFS instead.")
             if(cgalMeshes_atleast110 <= 0) {
-                AFSreconstruction(x$getVertices(),
-                                  jetSmoothing=jetSmoothing) # for cgalMeshes 1.1.0
+                dotsL_sub <- dotsL[names(dotsL) %in% args_recon[["afs"]]]
+                argL <- c(list(points=x$getVertices()), dotsL_sub)
+                do.call("AFSreconstruction", argL)
             } else {
                 AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
             }
         }
     } else if(method == "poisson") {
         if("PoissonReconstruction" %in% cgalMeshes_has) {
-            cgalMeshes::PoissonReconstruction(x$getVertices(),
-                                              normals=normals,
-                                              spacing=spacing,
-                                              sm_angle=sm_angle,
-                                              sm_radius=sm_radius,
-                                              sm_distance=sm_distance)
+            argL <- c(list(points=x$getVertices()), dotsL_sub)
+            do.call("PoissonReconstruction", argL)
         } else {
             warning("Poisson reconstruction not implemented. Using AFS instead.")
             if(cgalMeshes_atleast110 <= 0) {
-                AFSreconstruction(x$getVertices(),
-                                  jetSmoothing=jetSmoothing) # for cgalMeshes 1.1.0
+                dotsL_sub <- dotsL[names(dotsL) %in% args_recon[["afs"]]]
+                argL <- c(list(points=x$getVertices()), dotsL_sub)
+                do.call("AFSreconstruction", argL)
             } else {
                 AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
             }
         }
     } else {
-        stop("Wrong reconstruction method")
+        x
     }
 }
 
-read_mesh_one <- function(x,
-                          name,
-                          fix_issues=TRUE,
+read_mesh_one <- function(x, name, fix_issues=TRUE,
                           reconstruct=c("No", "AFS", "SSS", "Poisson"),
-                          jetSmoothing=NULL,
-                          scaleIterations=1,
-                          neighbors=12,
-                          samples=300,
-                          separateShells=FALSE,
-                          forceManifold=TRUE,
-                          borderAngle=45,
-                          normals="jet(12)",
-                          spacing="ave(12)",
-                          sm_angle=20,
-                          sm_radius=30,
-                          sm_distance=0.375) {
+                          ...) {
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson"))
     
@@ -109,25 +86,16 @@ read_mesh_one <- function(x,
     mesh <- cgalMesh$new(x, clean=fix_issues)
     
     if(reconstruct != "no") {
-        mesh_r <- reconstruct_mesh(mesh,
-                                   method=reconstruct,
-                                   jetSmoothing=jetSmoothing,
-                                   neighbors=neighbors,
-                                   samples=samples,
-                                   separateShells=separateShells,
-                                   forceManifold=forceManifold,
-                                   borderAngle=borderAngle,
-                                   normals=normals,
-                                   spacing=spacing,
-                                   sm_angle=sm_angle,
-                                   sm_radius=sm_radius,
-                                   sm_distance=sm_distance)
-        mesh <- mesh_r
+        mesh <- reconstruct_mesh(mesh, method=reconstruct, ...)
     }
     
     diag_nsi    <- !mesh$selfIntersects()
     diag_closed <- mesh$isClosed()
-    diag_bv     <- mesh$boundsVolume()
+    diag_bv  <- if(diag_nsi && diag_closed) {
+        mesh$boundsVolume()
+    } else {
+        FALSE
+    }
     
     issues <- c("self intersects", "not closed", "does not bound volume")
     
@@ -139,23 +107,26 @@ read_mesh_one <- function(x,
         if(fix_issues) {
             warn_str <- paste0(warn_str, ". Trying to fix.")
             warning(warn_str)
-            
-            if(!diag_closed) {
-                if(reconstruct == "no") {
-                    reconstruct <- "afs"
-                }
-                
-                mesh_r <- reconstruct_mesh(mesh, method=reconstruct, spacing=spacing)
+
+            ## try surface reconstruction to make mesh closed
+            ## if not already tried
+            if(!diag_closed && (reconstruct == "no")) {
+                warning("Trying AFS reconstruction to make mesh closed")
+                mesh_r <- reconstruct_mesh(mesh, method="afs", ...)
                 mesh   <- mesh_r
-            }
-            
-            if(!mesh$boundsVolume()) {
-                mesh$orientToBoundVolume()
             }
             
             if(mesh$selfIntersects()) {
                 mesh$removeSelfIntersections()
             }
+            
+            if(!mesh$selfIntersects() && mesh$isClosed()) {
+                if(!mesh$boundsVolume()) {
+                    mesh$orientToBoundVolume()
+                }
+            }
+        } else {
+            warning(warn_str)
         }
     }
        
@@ -179,22 +150,9 @@ read_mesh_one <- function(x,
          centroid=ctr)
 }
 
-read_mesh_obs <- function(x,
-                          name,
-                          fix_issues=TRUE,
+read_mesh_obs <- function(x, name, fix_issues=TRUE,
                           reconstruct=c("No", "AFS", "SSS", "Poisson"),
-                          jetSmoothing=NULL,
-                          scaleIterations=1,
-                          neighbors=12,
-                          samples=300,
-                          separateShells=FALSE,
-                          forceManifold=TRUE,
-                          borderAngle=45,
-                          normals="jet(12)",
-                          spacing="ave(12)",
-                          sm_angle=20,
-                          sm_radius=30,
-                          sm_distance=0.375) {
+                          ...) {
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson"))
     
@@ -209,40 +167,19 @@ read_mesh_obs <- function(x,
                       name=mesh_names[i],
                       fix_issues=fix_issues,
                       reconstruct=reconstruct,
-                      jetSmoothing=jetSmoothing,
-                      neighbors=neighbors,
-                      samples=samples,
-                      separateShells=separateShells,
-                      forceManifold=forceManifold,
-                      borderAngle=borderAngle,
-                      normals=normals,
-                      spacing=spacing,
-                      sm_angle=sm_angle,
-                      sm_radius=sm_radius,
-                      sm_distance=sm_distance)
+                      ...)
     })
     
     setNames(meshL, mesh_names)
 }
 
-read_mesh <- function(x,
-                      name,
-                      fix_issues=TRUE,
+read_mesh <- function(x, name, fix_issues=TRUE,
                       reconstruct=c("No", "AFS", "SSS", "Poisson"),
-                      jetSmoothing=NULL,
-                      scaleIterations=1,
-                      neighbors=12,
-                      samples=300,
-                      separateShells=FALSE,
-                      forceManifold=TRUE,
-                      borderAngle=45,
-                      normals="jet(12)",
-                      spacing="ave(12)",
-                      sm_angle=20,
-                      sm_radius=30,
-                      sm_distance=0.375) {
+                      ...) {
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson"))
+    
+    dotsL <- list(...)
     
     obs_names <- if(missing(name)) {
         names(x)
@@ -256,26 +193,12 @@ read_mesh <- function(x,
         lapply(x, function(y) { basename(tools::file_path_sans_ext(name)) })
     }
     
-    if(is.null(jetSmoothing)) {
-        jetSmoothing <- list(NULL)
-    }
-    
     Map(read_mesh_obs,
         setNames(x, obs_names),
         mesh_names,
         fix_issues=fix_issues,
         reconstruct=reconstruct,
-        jetSmoothing=jetSmoothing,
-        neighbors=neighbors,
-        samples=samples,
-        separateShells=separateShells,
-        forceManifold=forceManifold,
-        borderAngle=borderAngle,
-        normals=normals,
-        spacing=spacing,
-        sm_angle=sm_angle,
-        sm_radius=sm_radius,
-        sm_distance=sm_distance)
+        list(dotsL))
     }
 
 get_mesh_info_one <- function(x) {
@@ -388,6 +311,8 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
             m_intersect <- try(cgalMesh$new(m_intersect_rgl))
             
             ## intersection might be empty
+            ## then cgalMesh$new() throws an error
+            ## TODO cgalMeshes will fix this
             ui_ok <- !(inherits(m_union,     "try-error") ||
                        inherits(m_intersect, "try-error"))
         }

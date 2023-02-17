@@ -161,7 +161,7 @@ shiny::shinyApp(
                                          reconstruct    =input$read_mesh_reconstruct,
                                          jetSmoothing   =afs_jetsm_int,
                                          scaleIterations=input$read_mesh_reconstruct_sss_scit,
-                                         neighbors      =inputread_mesh_reconstruct_sss_neigh,
+                                         neighbors      =input$read_mesh_reconstruct_sss_neigh,
                                          samples        =input$read_mesh_reconstruct_sss_smpls,
                                          separateShells =input$read_mesh_reconstruct_sss_sshell,
                                          forceManifold  =input$read_mesh_reconstruct_sss_fmanif,
@@ -499,7 +499,7 @@ shiny::shinyApp(
                 }
             })
         })
-        output$ui_compare_table <- DT::renderDataTable({
+        output$table_ui_compare <- DT::renderDataTable({
             meshL <- react_file_sel_sorted()
             if(!is.null(meshL)) {
                 pairL <- get_mesh_pairs(meshL, names_only=TRUE)
@@ -508,7 +508,7 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$print_mesh_info <- DT::renderDataTable({
+        output$table_mesh_info <- DT::renderDataTable({
             meshL <- react_file_sel_sorted()
             if(!is.null(meshL)) {
                 d_mesh_info <- get_mesh_info(meshL)
@@ -517,7 +517,7 @@ shiny::shinyApp(
                                         extensions="Buttons",
                                         options=list(dom='Bfrtip',
                                                      buttons=c("csv", "excel")))
-                DT::formatRound(DT_out, columns=cols_numeric, digits=3)
+                DT::formatRound(DT_out, columns=cols_numeric, digits=2)
             } else {
                 NULL
             }
@@ -570,7 +570,7 @@ shiny::shinyApp(
                                             extensions="Buttons",
                                             options=list(dom='Bfrtip',
                                                          buttons=c("csv", "excel")))
-                    DT::formatRound(DT_out, columns=cols_numeric, digits=3)
+                    DT::formatRound(DT_out, columns=cols_numeric, digits=2)
                 } else {
                     NULL
                 }
@@ -587,7 +587,7 @@ shiny::shinyApp(
                                             extensions="Buttons",
                                             options=list(dom='Bfrtip',
                                                          buttons=c("csv", "excel")))
-                    DT::formatRound(DT_out, columns=cols_numeric, digits=3)
+                    DT::formatRound(DT_out, columns=cols_numeric, digits=2)
                 } else {
                     NULL
                 }
