@@ -337,12 +337,17 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
         if(m_intersect$selfIntersects()) {
             m_intersect$removeSelfIntersections()
         }
+
+        vol_u_0 <- try(m_union$volume())
+        vol_i_0 <- try(m_intersect$volume())
         
-        if(!m_union$boundsVolume()) {
+        if(!m_union$boundsVolume() ||
+           (!inherits(vol_u_0, "try-error") && (vol_u_0 <= 0 ))) {
             m_union$orientToBoundVolume()
         }
-        
-        if(!m_intersect$boundsVolume()) {
+
+        if(!m_intersect$boundsVolume() ||
+           (!inherits(vol_i_0, "try-error") && (vol_i_0 <= 0 ))) {
             m_intersect$orientToBoundVolume()
         }
         
