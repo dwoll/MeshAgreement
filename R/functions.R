@@ -314,14 +314,16 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
             m_union_rgl     <- Boov::toRGL(m_union_0)
             m_intersect_rgl <- Boov::toRGL(m_intersect_0)
             
-            m_union     <- try(cgalMesh$new(m_union_rgl))
-            m_intersect <- try(cgalMesh$new(m_intersect_rgl))
-            
             ## intersection might be empty
             ## then cgalMesh$new() throws an error
             ## TODO cgalMeshes will fix this
-            ui_ok <- !(inherits(m_union,     "try-error") ||
-                       inherits(m_intersect, "try-error"))
+            if((nrow(m_union_rgl[["vb"]])     > 0L) &&
+               (nrow(m_intersect_rgl[["vb"]]) > 0L)) {
+                m_union     <- cgalMesh$new(m_union_rgl)
+                m_intersect <- cgalMesh$new(m_intersect_rgl)
+            } else {
+                ui_ok <- FALSE
+            }
         }
     }
     
@@ -352,12 +354,9 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
             m_intersect$orientToBoundVolume()
         }
         
-        vol_u_0 <- try(m_union$volume())
-        vol_i_0 <- try(m_intersect$volume())
-        
-        if(inherits(vol_u_0, "try-error")         ||
-           inherits(vol_i_0, "try-error")         ||
-           is.na(vol_u_0)                         ||
+        vol_u_0 <- m_union$volume()
+        vol_i_0 <- m_intersect$volume()
+        if(is.na(vol_u_0)                         ||
            is.na(vol_i_0)                         ||
            (vol_u_0 <= 0)                         ||
            (vol_i_0 <= 0)                         ||
