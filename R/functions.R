@@ -91,12 +91,8 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
     
     diag_nsi    <- !mesh$selfIntersects()
     diag_closed <- mesh$isClosed()
-    diag_bv  <- if(diag_nsi && diag_closed) {
-        mesh$boundsVolume()
-    } else {
-        FALSE
-    }
-    
+    diag_bv     <- mesh$boundsVolume()
+
     issues <- c("self intersects", "not closed", "does not bound volume")
     
     if(!all(diag_nsi, diag_closed, diag_bv)) {
@@ -114,14 +110,19 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
                 warning("Trying AFS reconstruction to make mesh closed")
                 mesh_r <- reconstruct_mesh(mesh, method="afs", ...)
                 mesh   <- mesh_r
-            }
-            
-            if(mesh$selfIntersects()) {
-                mesh$removeSelfIntersections()
-            }
-            
-            if(!mesh$selfIntersects() && mesh$isClosed()) {
+                if(mesh$selfIntersects()) {
+                    mesh$removeSelfIntersections()
+                }
+                
                 if(!mesh$boundsVolume()) {
+                    mesh$orientToBoundVolume()
+                }
+            } else {
+                if(!diag_nsi) {
+                    mesh$removeSelfIntersections()
+                }
+                
+                if(!diag_bv) {
                     mesh$orientToBoundVolume()
                 }
             }
