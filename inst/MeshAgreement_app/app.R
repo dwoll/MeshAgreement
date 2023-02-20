@@ -15,6 +15,10 @@
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 
+## TODO
+## isotropicRemeshing(targetEdgeLength, iterations = 1, relaxSteps = 1)
+## separate tab for mesh editing?
+
 library(shiny)
 library(bs4Dash)
 library(ggplot2)
@@ -158,7 +162,8 @@ shiny::shinyApp(
                             argL <- list(x              =f_files,
                                          name           =f_names,
                                          fix_issues     =input$read_mesh_fix_issues,
-                                         reconstruct    =input$read_mesh_reconstruct,
+                                         reconstr_when  =input$read_mesh_reconstruct_when,
+                                         reconstr_method=input$read_mesh_reconstruct_method,
                                          jetSmoothing   =afs_jetsm_int,
                                          scaleIterations=input$read_mesh_reconstruct_sss_scit,
                                          neighbors      =input$read_mesh_reconstruct_sss_neigh,
@@ -287,7 +292,7 @@ shiny::shinyApp(
         output$ui_mesh_agree_ui <- renderUI({
             if(requireNamespace("Boov", quietly=TRUE)) {
                 tagList(p("Volume-overlap based metrics (DSC, JSC) are available, but take more time to compute than distance-based metrics.",
-                          "Depending on the mesh, calculating union / intersection via package 'Boov' may be faster than via package 'cgalMeshes'."),
+                          "Depending on the mesh, calculating the union / intersection via package 'Boov' may be faster than via package 'cgalMeshes'."),
                         radioButtons("mesh_agree_do_ui", "Calculate DSC, JSC",
                                      choices=c("No"="no", "Via cgalMeshes"="cgalMeshes", "Via Boov"="boov"),
                                      selected="no",
@@ -307,23 +312,40 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_method <- renderUI({
+        output$ui_reconstruct_when <- renderUI({
             if(input$meshes_input_source == "file") {
-                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import", TRUE),
-                        radioButtons("read_mesh_reconstruct",
-                                     "Surface reconstruction on import",
-                                     choices=c("No", "AFS", "SSS", "Poisson"),
+                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", TRUE),
+                        radioButtons("read_mesh_reconstruct_when",
+                                     "Do surface reconstruction?",
+                                     choices=c("No"="No",
+                                               "Only if the mesh is not proper"="Fix_Issues",
+                                               "Yes"="Yes"),
                                      selected="No",
                                      inline=TRUE))
             } else {
                 NULL
             }
         })
-        output$ui_surface_recon_sss_opts <- renderUI({
-            if(!is.null(input$meshes_input_source) &&
-               !is.null(input$read_mesh_reconstruct) &&
-               (input$meshes_input_source == "file") &&
-               (input$read_mesh_reconstruct == "SSS")) {
+        output$ui_reconstruct_method <- renderUI({
+            if((input$meshes_input_source == "file")      &&
+               !is.null(input$read_mesh_reconstruct_when) &&
+               (input$read_mesh_reconstruct_when != "No")) {
+                radioButtons("read_mesh_reconstruct_method",
+                             "Surface reconstruction method",
+                             choices=c("AFS", "SSS", "Poisson"),
+                             selected="AFS",
+                             inline=TRUE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_sss_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "SSS")) {
                 tagList(numericInput("read_mesh_reconstruct_sss_scit",
                                      "Scale Iterations",
                                     value=1, min=1, step=1),
@@ -346,11 +368,13 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_pois_method <- renderUI({
-            if(!is.null(input$meshes_input_source) &&
-               !is.null(input$read_mesh_reconstruct) &&
-               (input$meshes_input_source == "file") &&
-               (input$read_mesh_reconstruct == "Poisson")) {
+        output$ui_reconstruct_pois_method <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "Poisson")) {
                 radioButtons("read_mesh_reconstruct_pois_method",
                              "Spacing: k-NN or numeric",
                              choices=c("k-Nearest Neighbor -> integer"="knn", "numeric -> positive number"="num"),
@@ -360,11 +384,13 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_pois_opts <- renderUI({
-            if(!is.null(input$meshes_input_source) &&
-               !is.null(input$read_mesh_reconstruct) &&
-               (input$meshes_input_source == "file") &&
-               (input$read_mesh_reconstruct == "Poisson") &&
+        output$ui_reconstruct_pois_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)               &&
+               !is.null(input$read_mesh_reconstruct_method)      &&
+               !is.null(input$read_mesh_reconstruct_when)        &&
+               (input$meshes_input_source          == "file")    &&
+               (input$read_mesh_reconstruct_when   != "No")      &&
+               (input$read_mesh_reconstruct_method == "Poisson") &&
                !is.null(input$read_mesh_reconstruct_pois_method)) {
                 if(input$read_mesh_reconstruct_pois_method == "knn") {
                     spacing_default <- 12
@@ -398,11 +424,13 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_afs_jetsm_bool <- renderUI({
-            if(!is.null(input$meshes_input_source) &&
-               !is.null(input$read_mesh_reconstruct) &&
-               (input$meshes_input_source == "file") &&
-               (input$read_mesh_reconstruct == "AFS")) {
+        output$ui_reconstruct_afs_jetsm_bool <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "AFS")) {
                 checkboxInput("read_mesh_reconstruct_afs_jetsm_bool",
                               "Jet Smoothing for AFS reconstruction?",
                               value=FALSE)
@@ -410,11 +438,13 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_afs_jetsm_int <- renderUI({
+        output$ui_reconstruct_afs_jetsm_int <- renderUI({
             if(!is.null(input$meshes_input_source) &&
-               !is.null(input$read_mesh_reconstruct) &&
-               (input$meshes_input_source == "file") &&
-               (input$read_mesh_reconstruct == "AFS") &&
+               !is.null(input$read_mesh_reconstruct_method)         &&
+               !is.null(input$read_mesh_reconstruct_when)           &&
+               (input$meshes_input_source          == "file")       &&
+               (input$read_mesh_reconstruct_when   != "No")         &&
+               (input$read_mesh_reconstruct_method == "AFS")        &&
                !is.null(input$read_mesh_reconstruct_afs_jetsm_bool) &&
                (input$read_mesh_reconstruct_afs_jetsm_bool)) {
                 numericInput("read_mesh_reconstruct_afs_jetsm_int",

@@ -12,11 +12,9 @@ get_name_elem <- function(x, which=1L, sep=" <-> ") {
     }
 }
 
-reconstruct_mesh <- function(x,
-                             method=c("No", "AFS", "SSS", "Poisson"),
-                             ...) {
+reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
     method <- match.arg(tolower(method),
-                        choices=c("no", "afs", "sss", "poisson"))
+                        choices=c("afs", "sss", "poisson"))
     
     ## check functions available in cgalMeshes version
     cgalMeshes_has        <- ls(getNamespace("cgalMeshes"), all.names=TRUE)
@@ -72,10 +70,14 @@ reconstruct_mesh <- function(x,
 }
 
 read_mesh_one <- function(x, name, fix_issues=TRUE,
-                          reconstruct=c("No", "AFS", "SSS", "Poisson"),
+                          reconstr_when=c("No", "Fix_Issues", "Yes"),
+                          reconstr_method=c("AFS", "SSS", "Poisson"),
                           ...) {
-    reconstruct <- match.arg(tolower(reconstruct),
-                             choices=c("no", "afs", "sss", "poisson"))
+    reconstr_when <- match.arg(tolower(reconstr_when),
+                               choices=c("no", "fix_issues", "yes"))
+    
+    reconstr_method <- match.arg(tolower(reconstr_method),
+                                 choices=c("afs", "sss", "poisson"))
     
     mesh_name <- if(missing(name)) {
         basename(file_path_sans_ext(x))
@@ -85,13 +87,17 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
     
     mesh <- cgalMesh$new(x, clean=fix_issues)
     
-    if(reconstruct != "no") {
-        mesh <- reconstruct_mesh(mesh, method=reconstruct, ...)
+    if(reconstr_when == "yes") {
+        mesh <- reconstruct_mesh(mesh, method=reconstr_method, ...)
     }
     
     diag_nsi    <- !mesh$selfIntersects()
     diag_closed <- mesh$isClosed()
-    diag_bv     <- mesh$boundsVolume()
+    diag_bv     <- if(diag_nsi && diag_closed) {
+        mesh$boundsVolume()
+    } else {
+        FALSE
+    }
 
     issues <- c("self intersects", "not closed", "does not bound volume")
     
@@ -106,9 +112,9 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
 
             ## try surface reconstruction to make mesh closed
             ## if not already tried
-            if(!diag_closed && (reconstruct == "no")) {
+            if(!diag_closed && (reconstr_when == "fix_issues")) {
                 warning("Trying AFS reconstruction to make mesh closed")
-                mesh_r <- reconstruct_mesh(mesh, method="afs", ...)
+                mesh_r <- reconstruct_mesh(mesh, method=reconstr_method, ...)
                 mesh   <- mesh_r
                 if(mesh$selfIntersects()) {
                     mesh$removeSelfIntersections()
@@ -158,10 +164,14 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
 }
 
 read_mesh_obs <- function(x, name, fix_issues=TRUE,
-                          reconstruct=c("No", "AFS", "SSS", "Poisson"),
+                          reconstr_when=c("No", "Fix_Issues", "Yes"),
+                          reconstr_method=c("AFS", "SSS", "Poisson"),
                           ...) {
-    reconstruct <- match.arg(tolower(reconstruct),
-                             choices=c("no", "afs", "sss", "poisson"))
+    reconstr_when <- match.arg(tolower(reconstr_when),
+                               choices=c("no", "fix_issues", "yes"))
+    
+    reconstr_method <- match.arg(tolower(reconstr_method),
+                                 choices=c("afs", "sss", "poisson"))
     
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -173,7 +183,8 @@ read_mesh_obs <- function(x, name, fix_issues=TRUE,
         read_mesh_one(x[i],
                       name=mesh_names[i],
                       fix_issues=fix_issues,
-                      reconstruct=reconstruct,
+                      reconstr_when=reconstr_when,
+                      reconstr_method=reconstr_method,
                       ...)
     })
     
@@ -181,10 +192,14 @@ read_mesh_obs <- function(x, name, fix_issues=TRUE,
 }
 
 read_mesh <- function(x, name, fix_issues=TRUE,
-                      reconstruct=c("No", "AFS", "SSS", "Poisson"),
+                      reconstr_when=c("No", "Fix_Issues", "Yes"),
+                      reconstr_method=c("AFS", "SSS", "Poisson"),
                       ...) {
-    reconstruct <- match.arg(tolower(reconstruct),
-                             choices=c("no", "afs", "sss", "poisson"))
+    reconstr_when <- match.arg(tolower(reconstr_when),
+                               choices=c("no", "fix_issues", "yes"))
+    
+    reconstr_method <- match.arg(tolower(reconstr_method),
+                                 choices=c("afs", "sss", "poisson"))
     
     dotsL <- list(...)
     
@@ -204,7 +219,8 @@ read_mesh <- function(x, name, fix_issues=TRUE,
         setNames(x, obs_names),
         mesh_names,
         fix_issues=fix_issues,
-        reconstruct=reconstruct,
+        reconstr_when=reconstr_when,
+        reconstr_method=reconstr_method,
         list(dotsL))
     }
 
@@ -317,8 +333,8 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
             ## intersection might be empty
             ## then cgalMesh$new() throws an error
             ## TODO cgalMeshes will fix this
-            if((nrow(m_union_rgl[["vb"]])     > 0L) &&
-               (nrow(m_intersect_rgl[["vb"]]) > 0L)) {
+            if((nrow(m_union_0[["faces"]])     > 0L) &&
+               (nrow(m_intersect_0[["faces"]]) > 0L)) {
                 m_union     <- cgalMesh$new(m_union_rgl)
                 m_intersect <- cgalMesh$new(m_intersect_rgl)
             } else {
@@ -344,13 +360,13 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
         vol_u_0 <- try(m_union$volume())
         vol_i_0 <- try(m_intersect$volume())
         
-        if(!m_union$boundsVolume() ||
-           (!inherits(vol_u_0, "try-error") && (vol_u_0 <= 0 ))) {
+        if((!inherits(vol_u_0, "try-error") && (vol_u_0 <= 0)) ||
+           !m_union$boundsVolume()) {
             m_union$orientToBoundVolume()
         }
 
-        if(!m_intersect$boundsVolume() ||
-           (!inherits(vol_i_0, "try-error") && (vol_i_0 <= 0 ))) {
+        if((!inherits(vol_i_0, "try-error") && (vol_i_0 <= 0)) ||
+           !m_intersect$boundsVolume()) {
             m_intersect$orientToBoundVolume()
         }
         

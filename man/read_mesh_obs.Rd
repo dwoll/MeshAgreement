@@ -3,13 +3,15 @@
 \title{Read mesh files}
 \description{Read a list of mesh objects from one observer from files.}
 \usage{read_mesh_obs(x, name, fix_issues=TRUE,
-              reconstruct=c("No", "AFS", "SSS", "Poisson"),
+              reconstr_when=c("No", "Fix_Issues", "Yes"),
+              reconstr_method=c("AFS", "SSS", "Poisson"),
               ...)}
 \arguments{
   \item{x}{\code{character} vector of file names.}
   \item{name}{\code{character} vector of names that should be assigned to the mesh objects. If missing, names are taken from the file names.}
   \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections. Uses surface reconstruction if mesh is not closed.}
-  \item{reconstruct}{\code{character}. Use \code{"No"} for no reconstruction. \code{"AFS"} uses \code{\link[cgalMeshes]{AFSreconstruction}}. \code{"SSS"} uses \code{\link[cgalMeshes]{SSSreconstruction}}. \code{"Poisson"} uses \code{PoissonReconstruction} if the development branch of \code{cgalMeshes} is installed, and falls back to \code{AFS} otherwise.}
+  \item{reconstr_when}{\code{character}. Use \code{"No"} for no reconstruction. \code{"Fix_Issues"} does surface reconstruction only if the mesh appears not to be closed. \code{"Yes"} always does surface reconstruction as the first step when readubg a mesh.}
+  \item{reconstr_method}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[cgalMeshes]{AFSreconstruction}}. \code{"SSS"} uses \code{\link[cgalMeshes]{SSSreconstruction}}. \code{"Poisson"} uses \code{PoissonReconstruction} if the development branch of \code{cgalMeshes} is installed, and falls back to \code{AFS} otherwise.}
   \item{...}{Options passed to \code{\link[cgalMeshes]{AFSreconstruction}}, \code{\link[cgalMeshes]{SSSreconstruction}}, or \code{PoissonReconstruction}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF.}
@@ -25,7 +27,10 @@
 if(interactive()) {
     src_dir <- system.file("extdata", package="MeshAgreement")
     ff      <- list.files(src_dir, pattern="^Obs01", full.names=TRUE)
-    meshL   <- read_mesh_obs(ff, reconstruct="AFS")
+    meshL   <- read_mesh_obs(ff,
+                             reconstr_when="Yes",
+                             reconstr_method="AFS")
+
     get_mesh_info_obs(meshL)
 }
 }
