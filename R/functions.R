@@ -53,7 +53,7 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
     } else if(method == "poisson") {
         if("PoissonReconstruction" %in% cgalMeshes_has) {
             argL <- c(list(points=x$getVertices()), dotsL_sub)
-            do.call("PoissonReconstruction", argL)
+            do.call(cgalMeshes::PoissonReconstruction, argL)
         } else {
             warning("Poisson reconstruction not implemented. Using AFS instead.")
             if(cgalMeshes_atleast110 <= 0) {

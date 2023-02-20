@@ -61,9 +61,7 @@ shiny::shinyApp(
             ))
         ),
         body=dashboardBody(
-            tags$style(HTML(".irs-bar         { border-color: transparent; background-color: transparent; }",
-                            ".irs-bar-edge    { border-color: transparent; background-color: transparent; }",
-                            ".irs-bar--single { border-color: transparent; background-color: transparent; }")),
+            tags$head(tags$link(rel="stylesheet", type="text/css", href="custom.css")),
             tabItems(
                 tabItem(
                     tabName="tab_home",
@@ -87,7 +85,10 @@ shiny::shinyApp(
                 )
             )
         ),
-        sidebar=source("app_ui_sidebar.R", encoding="UTF8")$value
+        sidebar=source("app_ui_sidebar.R", encoding="UTF8")$value #,
+        # tags$head(tags$link(rel="stylesheet", type="text/css", href="custom.css"))
+        # includeCSS("www/custom.css")
+        # tags$head(tags$style(HTML('#apply_box .box-header{ display: none}')))
     ),
     #####-----------------------------------------------------------------------
     ## server
@@ -312,6 +313,13 @@ shiny::shinyApp(
                 NULL
             }
         })
+        output$ui_reconstruct_note <- renderUI({
+            if(input$meshes_input_source == "builtin") {
+                p("Reconstruction options are available when uploading 3D mesh files")
+            } else {
+                NULL
+            }
+        })
         output$ui_reconstruct_when <- renderUI({
             if(input$meshes_input_source == "file") {
                 tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", TRUE),
@@ -348,13 +356,13 @@ shiny::shinyApp(
                (input$read_mesh_reconstruct_method == "SSS")) {
                 tagList(numericInput("read_mesh_reconstruct_sss_scit",
                                      "Scale Iterations",
-                                    value=1, min=1, step=1),
+                                     value=1L, min=1L, step=1L),
                         numericInput("read_mesh_reconstruct_sss_neigh",
                                      "Neighbors",
-                                     value=12, min=1, step=1),
+                                     value=12L, min=1L, step=1L),
                         numericInput("read_mesh_reconstruct_sss_smpls",
                                      "Samples",
-                                     value=300, min=1, step=1),
+                                     value=300L, min=1L, step=1L),
                         checkboxInput("read_mesh_reconstruct_sss_sshell",
                                       "Separate Shells",
                                       value=FALSE),
@@ -363,7 +371,7 @@ shiny::shinyApp(
                                       value=TRUE),
                         numericInput("read_mesh_reconstruct_sss_angle",
                                      "Border Angle",
-                                     value=45, step=1))
+                                     value=45L, step=1L))
             } else {
                 NULL
             }
@@ -410,8 +418,9 @@ shiny::shinyApp(
                                      step=spacing_step),
                         numericInput("read_mesh_reconstruct_pois_smang",
                                      "SM Angle",
-                                     min=0,
-                                     value=20),
+                                     min=0L,
+                                     value=20L,
+                                     step=1L),
                         numericInput("read_mesh_reconstruct_pois_smrad",
                                      "SM Radius",
                                      min=0,
@@ -439,7 +448,7 @@ shiny::shinyApp(
             }
         })
         output$ui_reconstruct_afs_jetsm_int <- renderUI({
-            if(!is.null(input$meshes_input_source) &&
+            if(!is.null(input$meshes_input_source)                  &&
                !is.null(input$read_mesh_reconstruct_method)         &&
                !is.null(input$read_mesh_reconstruct_when)           &&
                (input$meshes_input_source          == "file")       &&
@@ -449,8 +458,9 @@ shiny::shinyApp(
                (input$read_mesh_reconstruct_afs_jetsm_bool)) {
                 numericInput("read_mesh_reconstruct_afs_jetsm_int",
                              "Jet Smoothing integer for AFS reconstruction",
-                             min=2,
-                             value=2)
+                             min=2L,
+                             value=2L,
+                             step=1L)
             } else {
                 NULL
             }
