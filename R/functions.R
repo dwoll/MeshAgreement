@@ -39,7 +39,7 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
     } else if(method == "sss") {
         if("SSSreconstruction" %in% cgalMeshes_has) {
             argL <- c(list(points=x$getVertices()), dotsL_sub)
-            do.call("SSSreconstruction", argL)
+            do.call(cgalMeshes::SSSreconstruction, argL)
         } else {
             warning("SSS reconstruction not implemented. Using AFS instead.")
             if(cgalMeshes_atleast110 <= 0) {
@@ -69,7 +69,9 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
     }
 }
 
-read_mesh_one <- function(x, name, fix_issues=TRUE,
+read_mesh_one <- function(x, name,
+                          fix_issues=TRUE,
+                          iso_remesh=FALSE,
                           reconstr_when=c("No", "Fix_Issues", "Yes"),
                           reconstr_method=c("AFS", "SSS", "Poisson"),
                           ...) {
@@ -87,8 +89,16 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
     
     mesh <- cgalMesh$new(x, clean=fix_issues)
     
+    if(iso_remesh) {
+        args_iso_remesh=c("targetEdgeLength", "iterations", "relaxSteps")
+        dotsL     <- list(...)
+        dotsL_sub <- dotsL[names(dotsL) %in% args_iso_remesh]
+        do.call(mesh$isotropicRemeshing, dotsL_sub)
+    }
+    
     if(reconstr_when == "yes") {
-        mesh <- reconstruct_mesh(mesh, method=reconstr_method, ...)
+        argL <- c(list(x=mesh, method=reconstr_method), dotsL)
+        mesh <- do.call("reconstruct_mesh", argL)
     }
     
     diag_nsi    <- !mesh$selfIntersects()
@@ -163,7 +173,9 @@ read_mesh_one <- function(x, name, fix_issues=TRUE,
          centroid=ctr)
 }
 
-read_mesh_obs <- function(x, name, fix_issues=TRUE,
+read_mesh_obs <- function(x, name,
+                          fix_issues=TRUE,
+                          iso_remesh=FALSE,
                           reconstr_when=c("No", "Fix_Issues", "Yes"),
                           reconstr_method=c("AFS", "SSS", "Poisson"),
                           ...) {
@@ -183,6 +195,7 @@ read_mesh_obs <- function(x, name, fix_issues=TRUE,
         read_mesh_one(x[i],
                       name=mesh_names[i],
                       fix_issues=fix_issues,
+                      iso_remesh=iso_remesh,
                       reconstr_when=reconstr_when,
                       reconstr_method=reconstr_method,
                       ...)
@@ -191,7 +204,9 @@ read_mesh_obs <- function(x, name, fix_issues=TRUE,
     setNames(meshL, mesh_names)
 }
 
-read_mesh <- function(x, name, fix_issues=TRUE,
+read_mesh <- function(x, name,
+                      fix_issues=TRUE,
+                      iso_remesh=FALSE,
                       reconstr_when=c("No", "Fix_Issues", "Yes"),
                       reconstr_method=c("AFS", "SSS", "Poisson"),
                       ...) {
@@ -219,6 +234,7 @@ read_mesh <- function(x, name, fix_issues=TRUE,
         setNames(x, obs_names),
         mesh_names,
         fix_issues=fix_issues,
+        iso_remesh=iso_remesh,
         reconstr_when=reconstr_when,
         reconstr_method=reconstr_method,
         list(dotsL))

@@ -160,23 +160,27 @@ shiny::shinyApp(
                                 val
                             }
                             
-                            argL <- list(x              =f_files,
-                                         name           =f_names,
-                                         fix_issues     =input$read_mesh_fix_issues,
-                                         reconstr_when  =input$read_mesh_reconstruct_when,
-                                         reconstr_method=input$read_mesh_reconstruct_method,
-                                         jetSmoothing   =afs_jetsm_int,
-                                         scaleIterations=input$read_mesh_reconstruct_sss_scit,
-                                         neighbors      =input$read_mesh_reconstruct_sss_neigh,
-                                         samples        =input$read_mesh_reconstruct_sss_smpls,
-                                         separateShells =input$read_mesh_reconstruct_sss_sshell,
-                                         forceManifold  =input$read_mesh_reconstruct_sss_fmanif,
-                                         borderAngle    =input$read_mesh_reconstruct_sss_angle,
+                            argL <- list(x               =f_files,
+                                         name            =f_names,
+                                         fix_issues      =input$read_mesh_fix_issues,
+                                         iso_remesh      =input$read_mesh_iso_remesh,
+                                         targetEdgeLength=input$read_mesh_iso_remesh_elen,
+                                         iterations      =input$read_mesh_iso_remesh_iter,
+                                         relaxSteps      =input$read_mesh_iso_remesh_relstep,
+                                         reconstr_when   =input$read_mesh_reconstruct_when,
+                                         reconstr_method =input$read_mesh_reconstruct_method,
+                                         jetSmoothing    =afs_jetsm_int,
+                                         scaleIterations =input$read_mesh_reconstruct_sss_scit,
+                                         neighbors       =input$read_mesh_reconstruct_sss_neigh,
+                                         samples         =input$read_mesh_reconstruct_sss_smpls,
+                                         separateShells  =input$read_mesh_reconstruct_sss_sshell,
+                                         forceManifold   =input$read_mesh_reconstruct_sss_fmanif,
+                                         borderAngle     =input$read_mesh_reconstruct_sss_angle,
                                          # normals="jet(12)", ## TODO
-                                         spacing        =pois_spacing,
-                                         sm_angle       =input$read_mesh_reconstruct_pois_smang,
-                                         sm_radius      =input$read_mesh_reconstruct_pois_smrad,
-                                         sm_distance    =input$read_mesh_reconstruct_pois_smdst)
+                                         spacing         =pois_spacing,
+                                         sm_angle        =input$read_mesh_reconstruct_pois_smang,
+                                         sm_radius       =input$read_mesh_reconstruct_pois_smrad,
+                                         sm_distance     =input$read_mesh_reconstruct_pois_smdst)
                             
                             do.call("read_mesh_obs", Filter(Negate(is.null), argL))
                         } else {
@@ -313,23 +317,53 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_reconstruct_note <- renderUI({
+        output$ui_import_fix_note <- renderUI({
             if(input$meshes_input_source == "builtin") {
-                p("Reconstruction options are available when uploading 3D mesh files")
+                p("Mesh transformation options are available when uploading 3D mesh files")
+            } else {
+                NULL
+            }
+        })
+        output$ui_import_fix <- renderUI({
+            if(input$meshes_input_source == "file") {
+                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", value=TRUE),
+                        checkboxInput("read_mesh_iso_remesh", "Isotropic remeshing?", value=FALSE))
+            } else {
+                NULL
+            }
+        })
+        output$ui_iso_remesh_opts <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_iso_remesh)  &&
+               (input$read_mesh_iso_remesh)) {
+                tagList(numericInput("read_mesh_iso_remesh_elen",
+                                     "Target edge length (lower -> more expensive)",
+                                     min=0.01,
+                                     value=1,
+                                     step=0.01),
+                        numericInput("read_mesh_iso_remesh_iter",
+                                     "Iterations",
+                                     min=1L,
+                                     value=1L,
+                                     step=1L),
+                        numericInput("read_mesh_iso_remesh_relstep",
+                                     "Relax steps",
+                                     min=1L,
+                                     value=1L,
+                                     step=1L))
             } else {
                 NULL
             }
         })
         output$ui_reconstruct_when <- renderUI({
             if(input$meshes_input_source == "file") {
-                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", TRUE),
-                        radioButtons("read_mesh_reconstruct_when",
-                                     "Do surface reconstruction?",
-                                     choices=c("No"="No",
-                                               "Only if the mesh is not proper"="Fix_Issues",
-                                               "Yes"="Yes"),
-                                     selected="No",
-                                     inline=TRUE))
+                radioButtons("read_mesh_reconstruct_when",
+                             "Do surface reconstruction?",
+                             choices=c("No"="No",
+                                       "Only if the mesh is not proper"="Fix_Issues",
+                                       "Yes"="Yes"),
+                             selected="No",
+                             inline=TRUE)
             } else {
                 NULL
             }

@@ -2,6 +2,15 @@ $Date: 2022-11-25 10:27:29 +0000 (Fri, 25 Nov 2022) $
 
 MESHAGREEMENT RELEASE VERSIONS at https://cran.r-project.org/
 
+Version 0.1.5 (February 11, 2023)
+    * read_mesh_one(), read_mesh_obs(), read_mesh():
+        - Use cgalMeshes' new SSSreconstruction() function
+          as well as PoissonReconstruction() from its devel branch
+        - Enable isotropic remeshing
+    * run_gui()
+        - Expose new options for remeshing and surface
+          reconstruction added to cgalMeshes
+
 Version 0.1.4 (November 25, 2022)
     * Reduce run-time of get_mesh_ui() example as
       suggested by CRAN
