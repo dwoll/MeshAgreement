@@ -15,10 +15,6 @@
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 
-## TODO
-## isotropicRemeshing(targetEdgeLength, iterations = 1, relaxSteps = 1)
-## separate tab for mesh editing?
-
 library(shiny)
 library(bs4Dash)
 library(ggplot2)
@@ -149,8 +145,19 @@ shiny::shinyApp(
                                 NULL
                             }
                             
-                            pois_spacing <- if(!is.null(input$read_mesh_reconstruct_pois_method) &&
-                                               (input$read_mesh_reconstruct_pois_method == "knn")) {
+                            pois_normals <- if(!is.null(input$read_mesh_reconstruct_pois_normethod) &&
+                                               (input$read_mesh_reconstruct_pois_normethod == "Jet")) {
+                                k <- round(input$read_mesh_reconstruct_pois_normals)
+                                stopifnot(k >= 2)
+                                paste0("jet(", k, ")")
+                            } else {
+                                k <- round(input$read_mesh_reconstruct_pois_normals)
+                                stopifnot(k >= 2)
+                                paste0("pca(", k, ")")
+                            }
+                            
+                            pois_spacing <- if(!is.null(input$read_mesh_reconstruct_pois_spmethod) &&
+                                               (input$read_mesh_reconstruct_pois_spmethod == "knn")) {
                                 k <- round(input$read_mesh_reconstruct_pois_spacing)
                                 stopifnot(k >= 2)
                                 paste0("ave(", k, ")")
@@ -176,7 +183,7 @@ shiny::shinyApp(
                                          separateShells  =input$read_mesh_reconstruct_sss_sshell,
                                          forceManifold   =input$read_mesh_reconstruct_sss_fmanif,
                                          borderAngle     =input$read_mesh_reconstruct_sss_angle,
-                                         # normals="jet(12)", ## TODO
+                                         normals         =pois_normals,
                                          spacing         =pois_spacing,
                                          sm_angle        =input$read_mesh_reconstruct_pois_smang,
                                          sm_radius       =input$read_mesh_reconstruct_pois_smrad,
@@ -362,7 +369,7 @@ shiny::shinyApp(
                              choices=c("No"="No",
                                        "Only if the mesh is not proper"="Fix_Issues",
                                        "Yes"="Yes"),
-                             selected="No",
+                             selected="Fix_Issues",
                              inline=TRUE)
             } else {
                 NULL
@@ -417,11 +424,16 @@ shiny::shinyApp(
                (input$meshes_input_source          == "file") &&
                (input$read_mesh_reconstruct_when   != "No")   &&
                (input$read_mesh_reconstruct_method == "Poisson")) {
-                radioButtons("read_mesh_reconstruct_pois_method",
-                             "Spacing: k-NN or numeric",
-                             choices=c("k-Nearest Neighbor -> integer"="knn", "numeric -> positive number"="num"),
-                             selected="knn",
-                             inline=TRUE)
+                tagList(radioButtons("read_mesh_reconstruct_pois_normethod",
+                             "Normals method",
+                             choices=c("Jet", "PCA"),
+                             selected="Jet",
+                             inline=TRUE),
+                        radioButtons("read_mesh_reconstruct_pois_spmethod",
+                                     "Spacing: k-NN or numeric",
+                                     choices=c("k-Nearest Neighbor -> integer"="knn", "numeric -> positive number"="num"),
+                                     selected="knn",
+                                     inline=TRUE))
             } else {
                 NULL
             }
@@ -433,8 +445,8 @@ shiny::shinyApp(
                (input$meshes_input_source          == "file")    &&
                (input$read_mesh_reconstruct_when   != "No")      &&
                (input$read_mesh_reconstruct_method == "Poisson") &&
-               !is.null(input$read_mesh_reconstruct_pois_method)) {
-                if(input$read_mesh_reconstruct_pois_method == "knn") {
+               !is.null(input$read_mesh_reconstruct_pois_spmethod)) {
+                if(input$read_mesh_reconstruct_pois_spmethod == "knn") {
                     spacing_default <- 12
                     spacing_min     <- 2
                     spacing_step    <- 1
@@ -445,7 +457,12 @@ shiny::shinyApp(
                 }
                 ## TODO
                 ## normals
-                tagList(numericInput("read_mesh_reconstruct_pois_spacing",
+                tagList(numericInput("read_mesh_reconstruct_pois_normals",
+                                     "Normals Parameter",
+                                     min=2L,
+                                     value=12L,
+                                     step=1L),
+                        numericInput("read_mesh_reconstruct_pois_spacing",
                                      "Spacing Parameter",
                                      min=spacing_min,
                                      value=spacing_default,
