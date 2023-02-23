@@ -81,6 +81,7 @@ read_mesh_one <- function(x, name,
     reconstr_method <- match.arg(tolower(reconstr_method),
                                  choices=c("afs", "sss", "poisson"))
     
+    dotsL <- list(...)
     mesh_name <- if(missing(name)) {
         basename(file_path_sans_ext(x))
     } else {
@@ -91,7 +92,6 @@ read_mesh_one <- function(x, name,
     
     if(iso_remesh) {
         args_iso_remesh=c("targetEdgeLength", "iterations", "relaxSteps")
-        dotsL     <- list(...)
         dotsL_sub <- dotsL[names(dotsL) %in% args_iso_remesh]
         do.call(mesh$isotropicRemeshing, dotsL_sub)
     }
