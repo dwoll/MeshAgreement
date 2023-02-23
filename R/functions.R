@@ -12,9 +12,9 @@ get_name_elem <- function(x, which=1L, sep=" <-> ") {
     }
 }
 
-reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
+reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"), ...) {
     method <- match.arg(tolower(method),
-                        choices=c("afs", "sss", "poisson"))
+                        choices=c("afs", "sss", "poisson", "ball_pivoting"))
     
     ## check functions available in cgalMeshes version
     cgalMeshes_has        <- ls(getNamespace("cgalMeshes"), all.names=TRUE)
@@ -22,9 +22,10 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
     cgalMeshes_atleast110 <- compareVersion("1.0.0.1", as.character(cgalMeshes_version))
     
     ## ... as of cgalMeshes v1.1.0
-    args_recon <- list(afs    =c("jetSmoothing"),
-                       sss    =c("scaleIterations", "neighbors", "samples", "separateShells", "forceManifold", "borderAngle"),
-                       poisson=c("normals", "spacing", "sm_angle", "sm_radius", "sm_distance"))
+    args_recon <- list(afs          =c("jetSmoothing"),
+                       sss          =c("scaleIterations", "neighbors", "samples", "separateShells", "forceManifold", "borderAngle"),
+                       poisson      =c("normals", "spacing", "sm_angle", "sm_radius", "sm_distance"),
+                       ball_pivoting=c("radius", "clustering", "angle", "deleteFaces"))
     
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
@@ -64,6 +65,10 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson"), ...) {
                 AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
             }
         }
+    } else if(method == "ball_pivoting") {
+        argL     <- c(list(x=x$getMesh()), dotsL_sub)
+        mesh_rgl <- do.call("vcgBallPivoting", argL)
+        cgalMesh$new(mesh_rgl)
     } else {
         x
     }
@@ -73,13 +78,13 @@ read_mesh_one <- function(x, name,
                           fix_issues=TRUE,
                           iso_remesh=FALSE,
                           reconstr_when=c("No", "Fix_Issues", "Yes"),
-                          reconstr_method=c("AFS", "SSS", "Poisson"),
+                          reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"),
                           ...) {
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
     
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson"))
+                                 choices=c("afs", "sss", "poisson", "ball_pivoting"))
     
     dotsL <- list(...)
     mesh_name <- if(missing(name)) {
@@ -177,13 +182,13 @@ read_mesh_obs <- function(x, name,
                           fix_issues=TRUE,
                           iso_remesh=FALSE,
                           reconstr_when=c("No", "Fix_Issues", "Yes"),
-                          reconstr_method=c("AFS", "SSS", "Poisson"),
+                          reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"),
                           ...) {
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
     
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson"))
+                                 choices=c("afs", "sss", "poisson", "ball_pivoting"))
     
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -208,13 +213,13 @@ read_mesh <- function(x, name,
                       fix_issues=TRUE,
                       iso_remesh=FALSE,
                       reconstr_when=c("No", "Fix_Issues", "Yes"),
-                      reconstr_method=c("AFS", "SSS", "Poisson"),
+                      reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"),
                       ...) {
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
     
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson"))
+                                 choices=c("afs", "sss", "poisson", "ball_pivoting"))
     
     dotsL <- list(...)
     

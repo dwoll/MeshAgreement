@@ -37,7 +37,8 @@ fluidPage(
                                  uiOutput("ui_reconstruct_afs_jetsm_int"),
                                  uiOutput("ui_reconstruct_sss_opts"),
                                  uiOutput("ui_reconstruct_pois_method"),
-                                 uiOutput("ui_reconstruct_pois_opts")))
+                                 uiOutput("ui_reconstruct_pois_opts"),
+                                 uiOutput("ui_reconstruct_ballpivot_opts")))
             )
         )
     ),

@@ -15,6 +15,8 @@
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 
+## vcgBallPivoting
+
 library(shiny)
 library(bs4Dash)
 library(ggplot2)
@@ -137,57 +139,109 @@ shiny::shinyApp(
                         if(!is.null(input_file_sel)) {
                             f_files <- input_file_sel$datapath
                             f_names <- input_file_sel$name
-                            ## list of meshes
-                            afs_jetsm_int <- if(!is.null(input$read_mesh_reconstruct_afs_jetsm_bool) &&
-                                                (input$read_mesh_reconstruct_afs_jetsm_bool)) {
-                                input$read_mesh_reconstruct_afs_jetsm_int
-                            } else {
-                                NULL
+                            
+                            isore_targetEdgeLength <- NULL
+                            isore_iterations       <- NULL
+                            isore_relaxSteps       <- NULL
+                            afs_jetSmoothing       <- NULL
+                            sss_scaleIterations    <- NULL
+                            sss_neighbors          <- NULL
+                            sss_samples            <- NULL
+                            sss_separateShells     <- NULL
+                            sss_forceManifold      <- NULL
+                            sss_borderAngle        <- NULL
+                            pois_normals           <- NULL
+                            pois_spacing           <- NULL
+                            pois_sm_angle          <- NULL
+                            pois_sm_radius         <- NULL
+                            pois_sm_distance       <- NULL
+                            ballp_radius           <- NULL
+                            ballp_clustering       <- NULL
+                            ballp_angle            <- NULL
+                            ballp_deleteFaces      <- NULL
+                            
+                            ## isotropic remeshing options
+                            if(!is.null(input$iso_remesh) &&
+                               input$iso_remesh) {
+                                isore_targetEdgeLength <- input$read_mesh_iso_remesh_elen
+                                isore_iterations       <- input$read_mesh_iso_remesh_iter
+                                isore_relaxSteps       <- input$read_mesh_iso_remesh_relstep
                             }
                             
-                            pois_normals <- if(!is.null(input$read_mesh_reconstruct_pois_normethod) &&
-                                               (input$read_mesh_reconstruct_pois_normethod == "Jet")) {
-                                k <- round(input$read_mesh_reconstruct_pois_normals)
-                                stopifnot(k >= 2)
-                                paste0("jet(", k, ")")
-                            } else {
-                                k <- round(input$read_mesh_reconstruct_pois_normals)
-                                stopifnot(k >= 2)
-                                paste0("pca(", k, ")")
-                            }
-                            
-                            pois_spacing <- if(!is.null(input$read_mesh_reconstruct_pois_spmethod) &&
-                                               (input$read_mesh_reconstruct_pois_spmethod == "knn")) {
-                                k <- round(input$read_mesh_reconstruct_pois_spacing)
-                                stopifnot(k >= 2)
-                                paste0("ave(", k, ")")
-                            } else {
-                                val <- input$read_mesh_reconstruct_pois_spacing
-                                stopifnot(val > 0)
-                                val
+                            ## some surface reconstruction requested
+                            if(!is.null(input$read_mesh_reconstruct_when) &&
+                               (input$read_mesh_reconstruct_when != "No")) {
+                                ## method = AFS
+                                if(input$read_mesh_reconstruct_method == "AFS") {
+                                    if(input$read_mesh_reconstruct_afs_jetsm_bool) {
+                                        afs_jetSmoothing <- input$read_mesh_reconstruct_afs_jetsm_int
+                                    }
+                                } else if(input$read_mesh_reconstruct_method == "SSS") {
+                                    sss_scaleIterations <- input$read_mesh_reconstruct_sss_scit
+                                    sss_neighbors       <- input$read_mesh_reconstruct_sss_neigh
+                                    sss_samples         <- input$read_mesh_reconstruct_sss_smpls
+                                    sss_separateShells  <- input$read_mesh_reconstruct_sss_sshell
+                                    sss_forceManifold   <- input$read_mesh_reconstruct_sss_fmanif
+                                    sss_borderAngle     <- input$read_mesh_reconstruct_sss_angle
+                                } else if(input$read_mesh_reconstruct_method == "Poisson") {
+                                    if(input$read_mesh_reconstruct_pois_normethod == "Jet") {
+                                        k <- round(input$read_mesh_reconstruct_pois_normals)
+                                        stopifnot(k >= 2)
+                                        pois_normals <- paste0("jet(", k, ")")
+                                    } else {
+                                        ## method = pca
+                                        k <- round(input$read_mesh_reconstruct_pois_normals)
+                                        stopifnot(k >= 2)
+                                        pois_normals <- paste0("pca(", k, ")")
+                                    }
+                                    
+                                    if(input$read_mesh_reconstruct_pois_spmethod == "knn") {
+                                        k <- round(input$read_mesh_reconstruct_pois_spacing)
+                                        stopifnot(k >= 2)
+                                        pois_spacing <- paste0("ave(", k, ")")
+                                    } else {
+                                        ## method = numeric
+                                        val <- input$read_mesh_reconstruct_pois_spacing
+                                        stopifnot(val > 0)
+                                        pois_spacing <- val
+                                    }
+                                    
+                                    pois_sm_angle    <- input$read_mesh_reconstruct_pois_smang
+                                    pois_sm_radius   <- input$read_mesh_reconstruct_pois_smrad
+                                    pois_sm_distance <- input$read_mesh_reconstruct_pois_smdst
+                                } else if(input$read_mesh_reconstruct_method == "Ball_Pivot") {
+                                    ballp_radius      <- input$read_mesh_reconstruct_ballpivot_radius
+                                    ballp_clustering  <- input$read_mesh_reconstruct_ballpivot_clust
+                                    ballp_angle       <- input$read_mesh_reconstruct_ballpivot_angle
+                                    ballp_deleteFaces <- input$read_mesh_reconstruct_ballpviot_delface
+                                }
                             }
                             
                             argL <- list(x               =f_files,
                                          name            =f_names,
                                          fix_issues      =input$read_mesh_fix_issues,
                                          iso_remesh      =input$read_mesh_iso_remesh,
-                                         targetEdgeLength=input$read_mesh_iso_remesh_elen,
-                                         iterations      =input$read_mesh_iso_remesh_iter,
-                                         relaxSteps      =input$read_mesh_iso_remesh_relstep,
+                                         targetEdgeLength=isore_targetEdgeLength,
+                                         iterations      =isore_iterations,
+                                         relaxSteps      =isore_relaxSteps,
                                          reconstr_when   =input$read_mesh_reconstruct_when,
                                          reconstr_method =input$read_mesh_reconstruct_method,
-                                         jetSmoothing    =afs_jetsm_int,
-                                         scaleIterations =input$read_mesh_reconstruct_sss_scit,
-                                         neighbors       =input$read_mesh_reconstruct_sss_neigh,
-                                         samples         =input$read_mesh_reconstruct_sss_smpls,
-                                         separateShells  =input$read_mesh_reconstruct_sss_sshell,
-                                         forceManifold   =input$read_mesh_reconstruct_sss_fmanif,
-                                         borderAngle     =input$read_mesh_reconstruct_sss_angle,
+                                         jetSmoothing    =afs_jetSmoothing,
+                                         scaleIterations =sss_scaleIterations,
+                                         neighbors       =sss_neighbors,
+                                         samples         =sss_samples,
+                                         separateShells  =sss_separateShells,
+                                         forceManifold   =sss_forceManifold,
+                                         borderAngle     =sss_borderAngle,
                                          normals         =pois_normals,
                                          spacing         =pois_spacing,
-                                         sm_angle        =input$read_mesh_reconstruct_pois_smang,
-                                         sm_radius       =input$read_mesh_reconstruct_pois_smrad,
-                                         sm_distance     =input$read_mesh_reconstruct_pois_smdst)
+                                         sm_angle        =pois_sm_angle,
+                                         sm_radius       =pois_sm_radius,
+                                         sm_distance     =pois_sm_distance,
+                                         radius          =ballp_radius,
+                                         clustering      =ballp_clustering,
+                                         angle           =ballp_angle,
+                                         deleteFaces     =ballp_deleteFaces)
                             
                             do.call("read_mesh_obs", Filter(Negate(is.null), argL))
                         } else {
@@ -381,7 +435,9 @@ shiny::shinyApp(
                (input$read_mesh_reconstruct_when != "No")) {
                 radioButtons("read_mesh_reconstruct_method",
                              "Surface reconstruction method",
-                             choices=c("AFS", "SSS", "Poisson"),
+                             choices=c("AFS"="AFS", "SSS"="SSS", 
+                                       "Poisson"="Poisson",
+                                       "Ball Pivoting"="Ball_Pivot"),
                              selected="AFS",
                              inline=TRUE)
             } else {
@@ -480,6 +536,35 @@ shiny::shinyApp(
                                      "SM Distance",
                                      min=0,
                                      value=0.375))
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_ballpivot_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "Ball_Pivot")) {
+                tagList(numericInput("read_mesh_reconstruct_ballpivot_radius",
+                                     "Radius",
+                                     min=0,
+                                     value=0,
+                                     step=0.01),
+                        numericInput("read_mesh_reconstruct_ballpivot_clust",
+                                     "Clustering",
+                                     min=0.01,
+                                     value=0.2,
+                                     step=0.01),
+                        numericInput("read_mesh_reconstruct_ballpivot_angle",
+                                     "Angle (rad)",
+                                     min=0.01,
+                                     value=pi/2,
+                                     step=0.01),
+                        checkboxInput("read_mesh_reconstruct_ballpviot_delface",
+                                     "Delete Faces?",
+                                     value=FALSE))
             } else {
                 NULL
             }
