@@ -88,9 +88,9 @@ read_mesh_one <- function(x, name,
     
     dotsL <- list(...)
     mesh_name <- if(missing(name)) {
-        basename(file_path_sans_ext(x))
+        basename(tools::file_path_sans_ext(x))
     } else {
-        basename(file_path_sans_ext(name))
+        basename(tools::file_path_sans_ext(name))
     }
     
     mesh <- cgalMesh$new(x, clean=fix_issues)

@@ -15,8 +15,6 @@
 #####---------------------------------------------------------------------------
 #####---------------------------------------------------------------------------
 
-## vcgBallPivoting
-
 library(shiny)
 library(bs4Dash)
 library(ggplot2)
@@ -161,8 +159,8 @@ shiny::shinyApp(
                             ballp_deleteFaces      <- NULL
                             
                             ## isotropic remeshing options
-                            if(!is.null(input$iso_remesh) &&
-                               input$iso_remesh) {
+                            if(!is.null(input$read_mesh_iso_remesh) &&
+                               input$read_mesh_iso_remesh) {
                                 isore_targetEdgeLength <- input$read_mesh_iso_remesh_elen
                                 isore_iterations       <- input$read_mesh_iso_remesh_iter
                                 isore_relaxSteps       <- input$read_mesh_iso_remesh_relstep
