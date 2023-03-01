@@ -421,7 +421,7 @@ shiny::shinyApp(
                              choices=c("No"="No",
                                        "Only if the mesh is not proper"="Fix_Issues",
                                        "Yes"="Yes"),
-                             selected="Fix_Issues",
+                             selected="No",
                              inline=TRUE)
             } else {
                 NULL
@@ -438,6 +438,19 @@ shiny::shinyApp(
                                        "Ball Pivoting"="Ball_Pivot"),
                              selected="AFS",
                              inline=TRUE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_cave <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")) {
+                p("Cave: Surface reconstruction enabled. Please visually validate results using 'View meshes'.",
+                  id="asdf",
+                  style="font-weight:bold;color:red;")
             } else {
                 NULL
             }

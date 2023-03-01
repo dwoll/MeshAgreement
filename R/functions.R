@@ -135,8 +135,10 @@ read_mesh_one <- function(x, name,
                     mesh$removeSelfIntersections()
                 }
                 
-                if(!mesh$boundsVolume()) {
-                    mesh$orientToBoundVolume()
+                if(mesh$isClosed() && !mesh$selfIntersects()) {
+                    if(!mesh$boundsVolume()) {
+                        mesh$orientToBoundVolume()
+                    }
                 }
             } else {
                 if(!diag_nsi) {

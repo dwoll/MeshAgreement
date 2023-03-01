@@ -54,6 +54,7 @@ fluidPage(
                 closable=FALSE,
                 maximizable=FALSE,
                 collapsible=FALSE,
+                uiOutput("ui_reconstruct_cave"),
                 actionButton("apply_file_sel", "Apply")
             )
         )
