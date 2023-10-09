@@ -2,7 +2,7 @@
 
 Agreement measures for 3D structures saved as mesh files. R package containing an interactive [R](https://www.r-project.org/) [Shiny](https://shiny.rstudio.com/) app. You can upload mesh files (STL, PLY, OBJ, OFF) to generate agreement measures for all pairwise comparisons, as well as the corresponding aggregated agreement. The intended application is to compare delineated structures for radiotherapy treatment planning.
 
-  * Live demo here: [http://shiny.imbei.uni-mainz.de:3838/MeshAgreement/](http://shiny.imbei.uni-mainz.de:3838/MeshAgreement/) (**down during server migration until 2022-11-29**)
+  * Live demo here: [http://shiny.imbei.uni-mainz.de:3838/MeshAgreement/](http://shiny.imbei.uni-mainz.de:3838/MeshAgreement/)
   * [ESAPI export script](https://github.com/dwoll/MeshAgreement/tree/main/inst/extdata) for getting 3D mesh files from Varian Eclipse
 
 # Implemented agreement measures
@@ -18,11 +18,13 @@ Agreement measures for 3D structures saved as mesh files. R package containing a
 
 # Required packages
 
-`MeshAgreement` heavily relies on packages developed by Stéphane Laurent, which build on package [RcppCGAL](https://CRAN.R-project.org/package=RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry. The second back-end for geometry calculations is the [VCG Library](http://www.vcglib.net/).
+`MeshAgreement` heavily relies on packages developed by Stéphane Laurent, which build on package [RcppCGAL](https://https://github.com/ericdunipace/RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry. The second back-end for geometry calculations is the [VCG Library](http://www.vcglib.net/).
+
+**Note that as of 10/2023, some of these packages are not on CRAN, but have to be installed from GitHub using `remotes::install_github()`**
 
   * [Rvcg](https://CRAN.R-project.org/package=Rvcg)
-  * [cgalMeshes](https://CRAN.R-project.org/package=cgalMeshes)
-  * [Boov](https://CRAN.R-project.org/package=Boov) - useful for getting better performance in union/intersection calculation for some meshes
+  * [cgalMeshes](https://github.com/stla/cgalMeshes)
+  * [Boov](https://https://github.com/stla/Boov) - useful for getting better performance in union/intersection calculation for some meshes
   * [shiny](https://CRAN.R-project.org/package=shiny)
   * [bs4Dash](https://CRAN.R-project.org/package=bs4Dash)
   * [DT](https://CRAN.R-project.org/package=DT)
