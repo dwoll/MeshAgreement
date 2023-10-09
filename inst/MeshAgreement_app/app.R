@@ -57,9 +57,7 @@ shiny::shinyApp(
             ))
         ),
         body=dashboardBody(
-            tags$style(HTML(".irs-bar         { border-color: transparent; background-color: transparent; }",
-                            ".irs-bar-edge    { border-color: transparent; background-color: transparent; }",
-                            ".irs-bar--single { border-color: transparent; background-color: transparent; }")),
+            tags$head(tags$link(rel="stylesheet", type="text/css", href="custom.css")),
             tabItems(
                 tabItem(
                     tabName="tab_home",
@@ -83,7 +81,10 @@ shiny::shinyApp(
                 )
             )
         ),
-        sidebar=source("app_ui_sidebar.R", encoding="UTF8")$value
+        sidebar=source("app_ui_sidebar.R", encoding="UTF8")$value #,
+        # tags$head(tags$link(rel="stylesheet", type="text/css", href="custom.css"))
+        # includeCSS("www/custom.css")
+        # tags$head(tags$style(HTML('#apply_box .box-header{ display: none}')))
     ),
     #####-----------------------------------------------------------------------
     ## server
@@ -110,12 +111,16 @@ shiny::shinyApp(
                 }
                 
                 meshL <- if(input$meshes_input_source == "builtin") {
-                    ## use builtin data
-                    ll <- data_heart_obsL
-                    if(input$meshes_sel_mode == "indiv") {
-                        ll[seq_len(min(c(length(ll), n_observers)))]
+                    if(exists("cgalMesh_heart_obsL") && !is.null(cgalMesh_heart_obsL)) {
+                        ## use builtin data
+                        ll <- cgalMesh_heart_obsL
+                        if(input$meshes_sel_mode == "indiv") {
+                            ll[seq_len(min(c(length(ll), n_observers)))]
+                        } else {
+                            ll
+                        }
                     } else {
-                        ll
+                        NULL
                     }
                 } else {
                     ## read data from file
@@ -132,12 +137,111 @@ shiny::shinyApp(
                         if(!is.null(input_file_sel)) {
                             f_files <- input_file_sel$datapath
                             f_names <- input_file_sel$name
-                            ## list of meshes
-                            read_mesh_obs(f_files,
-                                          name=f_names,
-                                          fix_issues=input$read_mesh_fix_issues,
-                                          reconstruct=input$read_mesh_reconstruct,
-                                          spacing=input$read_mesh_reconstruct_pois_spacing)
+                            
+                            isore_targetEdgeLength <- NULL
+                            isore_iterations       <- NULL
+                            isore_relaxSteps       <- NULL
+                            afs_jetSmoothing       <- NULL
+                            sss_scaleIterations    <- NULL
+                            sss_neighbors          <- NULL
+                            sss_samples            <- NULL
+                            sss_separateShells     <- NULL
+                            sss_forceManifold      <- NULL
+                            sss_borderAngle        <- NULL
+                            pois_normals           <- NULL
+                            pois_spacing           <- NULL
+                            pois_sm_angle          <- NULL
+                            pois_sm_radius         <- NULL
+                            pois_sm_distance       <- NULL
+                            ballp_radius           <- NULL
+                            ballp_clustering       <- NULL
+                            ballp_angle            <- NULL
+                            ballp_deleteFaces      <- NULL
+                            
+                            ## isotropic remeshing options
+                            if(!is.null(input$read_mesh_iso_remesh) &&
+                               input$read_mesh_iso_remesh) {
+                                isore_targetEdgeLength <- input$read_mesh_iso_remesh_elen
+                                isore_iterations       <- input$read_mesh_iso_remesh_iter
+                                isore_relaxSteps       <- input$read_mesh_iso_remesh_relstep
+                            }
+                            
+                            ## some surface reconstruction requested
+                            if(!is.null(input$read_mesh_reconstruct_when) &&
+                               (input$read_mesh_reconstruct_when != "No")) {
+                                ## method = AFS
+                                if(input$read_mesh_reconstruct_method == "AFS") {
+                                    if(input$read_mesh_reconstruct_afs_jetsm_bool) {
+                                        afs_jetSmoothing <- input$read_mesh_reconstruct_afs_jetsm_int
+                                    }
+                                } else if(input$read_mesh_reconstruct_method == "SSS") {
+                                    sss_scaleIterations <- input$read_mesh_reconstruct_sss_scit
+                                    sss_neighbors       <- input$read_mesh_reconstruct_sss_neigh
+                                    sss_samples         <- input$read_mesh_reconstruct_sss_smpls
+                                    sss_separateShells  <- input$read_mesh_reconstruct_sss_sshell
+                                    sss_forceManifold   <- input$read_mesh_reconstruct_sss_fmanif
+                                    sss_borderAngle     <- input$read_mesh_reconstruct_sss_angle
+                                } else if(input$read_mesh_reconstruct_method == "Poisson") {
+                                    if(input$read_mesh_reconstruct_pois_normethod == "Jet") {
+                                        k <- round(input$read_mesh_reconstruct_pois_normals)
+                                        stopifnot(k >= 2)
+                                        pois_normals <- paste0("jet(", k, ")")
+                                    } else {
+                                        ## method = pca
+                                        k <- round(input$read_mesh_reconstruct_pois_normals)
+                                        stopifnot(k >= 2)
+                                        pois_normals <- paste0("pca(", k, ")")
+                                    }
+                                    
+                                    if(input$read_mesh_reconstruct_pois_spmethod == "knn") {
+                                        k <- round(input$read_mesh_reconstruct_pois_spacing)
+                                        stopifnot(k >= 2)
+                                        pois_spacing <- paste0("ave(", k, ")")
+                                    } else {
+                                        ## method = numeric
+                                        val <- input$read_mesh_reconstruct_pois_spacing
+                                        stopifnot(val > 0)
+                                        pois_spacing <- val
+                                    }
+                                    
+                                    pois_sm_angle    <- input$read_mesh_reconstruct_pois_smang
+                                    pois_sm_radius   <- input$read_mesh_reconstruct_pois_smrad
+                                    pois_sm_distance <- input$read_mesh_reconstruct_pois_smdst
+                                } else if(input$read_mesh_reconstruct_method == "Ball_Pivot") {
+                                    ballp_radius      <- input$read_mesh_reconstruct_ballpivot_radius
+                                    ballp_clustering  <- input$read_mesh_reconstruct_ballpivot_clust
+                                    ballp_angle       <- input$read_mesh_reconstruct_ballpivot_angle
+                                    ballp_deleteFaces <- input$read_mesh_reconstruct_ballpviot_delface
+                                }
+                            }
+                            
+                            argL <- list(x               =f_files,
+                                         name            =f_names,
+                                         fix_issues      =input$read_mesh_fix_issues,
+                                         iso_remesh      =input$read_mesh_iso_remesh,
+                                         targetEdgeLength=isore_targetEdgeLength,
+                                         iterations      =isore_iterations,
+                                         relaxSteps      =isore_relaxSteps,
+                                         reconstr_when   =input$read_mesh_reconstruct_when,
+                                         reconstr_method =input$read_mesh_reconstruct_method,
+                                         jetSmoothing    =afs_jetSmoothing,
+                                         scaleIterations =sss_scaleIterations,
+                                         neighbors       =sss_neighbors,
+                                         samples         =sss_samples,
+                                         separateShells  =sss_separateShells,
+                                         forceManifold   =sss_forceManifold,
+                                         borderAngle     =sss_borderAngle,
+                                         normals         =pois_normals,
+                                         spacing         =pois_spacing,
+                                         sm_angle        =pois_sm_angle,
+                                         sm_radius       =pois_sm_radius,
+                                         sm_distance     =pois_sm_distance,
+                                         radius          =ballp_radius,
+                                         clustering      =ballp_clustering,
+                                         angle           =ballp_angle,
+                                         deleteFaces     =ballp_deleteFaces)
+                            
+                            do.call("read_mesh_obs", Filter(Negate(is.null), argL))
                         } else {
                             NULL
                         }
@@ -203,7 +307,7 @@ shiny::shinyApp(
 
                 argL <- list(meshL,
                              chop        =TRUE,
-                             silent      =TRUE,
+                             silent      =FALSE,
                              colormeshes =TRUE,
                              nSamples    =nSamples,
                              nSamplesArea=nSamplesArea,
@@ -252,7 +356,7 @@ shiny::shinyApp(
         output$ui_mesh_agree_ui <- renderUI({
             if(requireNamespace("Boov", quietly=TRUE)) {
                 tagList(p("Volume-overlap based metrics (DSC, JSC) are available, but take more time to compute than distance-based metrics.",
-                          "Depending on the mesh, calculating union / intersection via package 'Boov' may be faster than via package 'cgalMeshes'."),
+                          "Depending on the mesh, calculating the union / intersection via package 'Boov' may be faster than via package 'cgalMeshes'."),
                         radioButtons("mesh_agree_do_ui", "Calculate DSC, JSC",
                                      choices=c("No"="no", "Via cgalMeshes"="cgalMeshes", "Via Boov"="boov"),
                                      selected="no",
@@ -272,27 +376,238 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$ui_surface_recon_method <- renderUI({
+        output$ui_import_fix_note <- renderUI({
+            if(input$meshes_input_source == "builtin") {
+                p("Mesh transformation options are available when uploading 3D mesh files")
+            } else {
+                NULL
+            }
+        })
+        output$ui_import_fix <- renderUI({
             if(input$meshes_input_source == "file") {
-                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import", TRUE),
-                        radioButtons("read_mesh_reconstruct",
-                                     "Surface reconstruction on import",
-                                     choices=c("No", "AFS"), #, "Poisson"),
-                                     selected="No",
+                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", value=TRUE),
+                        checkboxInput("read_mesh_iso_remesh", "Isotropic remeshing?", value=FALSE))
+            } else {
+                NULL
+            }
+        })
+        output$ui_iso_remesh_opts <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_iso_remesh)  &&
+               (input$read_mesh_iso_remesh)) {
+                tagList(numericInput("read_mesh_iso_remesh_elen",
+                                     "Target edge length (lower -> more expensive)",
+                                     min=0.01,
+                                     value=1,
+                                     step=0.01),
+                        numericInput("read_mesh_iso_remesh_iter",
+                                     "Iterations",
+                                     min=1L,
+                                     value=1L,
+                                     step=1L),
+                        numericInput("read_mesh_iso_remesh_relstep",
+                                     "Relax steps",
+                                     min=1L,
+                                     value=1L,
+                                     step=1L))
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_when <- renderUI({
+            if(input$meshes_input_source == "file") {
+                radioButtons("read_mesh_reconstruct_when",
+                             "Do surface reconstruction?",
+                             choices=c("No"="No",
+                                       "Only if the mesh is not proper"="Fix_Issues",
+                                       "Yes"="Yes"),
+                             selected="No",
+                             inline=TRUE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_method <- renderUI({
+            if((input$meshes_input_source == "file")      &&
+               !is.null(input$read_mesh_reconstruct_when) &&
+               (input$read_mesh_reconstruct_when != "No")) {
+                radioButtons("read_mesh_reconstruct_method",
+                             "Surface reconstruction method",
+                             choices=c("AFS"="AFS", "SSS"="SSS", 
+                                       "Poisson"="Poisson",
+                                       "Ball Pivoting"="Ball_Pivot"),
+                             selected="AFS",
+                             inline=TRUE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_cave <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")) {
+                p("Cave: Surface reconstruction enabled. Please visually validate results using 'View meshes'.",
+                  id="asdf",
+                  style="font-weight:bold;color:red;")
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_sss_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "SSS")) {
+                tagList(numericInput("read_mesh_reconstruct_sss_scit",
+                                     "Scale Iterations",
+                                     value=1L, min=1L, step=1L),
+                        numericInput("read_mesh_reconstruct_sss_neigh",
+                                     "Neighbors",
+                                     value=12L, min=1L, step=1L),
+                        numericInput("read_mesh_reconstruct_sss_smpls",
+                                     "Samples",
+                                     value=300L, min=1L, step=1L),
+                        checkboxInput("read_mesh_reconstruct_sss_sshell",
+                                      "Separate Shells",
+                                      value=FALSE),
+                        checkboxInput("read_mesh_reconstruct_sss_fmanif",
+                                      "Force Manifold",
+                                      value=TRUE),
+                        numericInput("read_mesh_reconstruct_sss_angle",
+                                     "Border Angle",
+                                     value=45L, step=1L))
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_pois_method <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "Poisson")) {
+                tagList(radioButtons("read_mesh_reconstruct_pois_normethod",
+                             "Normals method",
+                             choices=c("Jet", "PCA"),
+                             selected="Jet",
+                             inline=TRUE),
+                        radioButtons("read_mesh_reconstruct_pois_spmethod",
+                                     "Spacing: k-NN or numeric",
+                                     choices=c("k-Nearest Neighbor -> integer"="knn", "numeric -> positive number"="num"),
+                                     selected="knn",
                                      inline=TRUE))
             } else {
                 NULL
             }
         })
-        output$ui_surface_recon_spacing <- renderUI({
-            if(!is.null(input$meshes_input_source) &&
-               !is.null(input$read_mesh_reconstruct) &&
-               (input$meshes_input_source == "file") &&
-               (input$read_mesh_reconstruct == "Poisson")) {
-                numericInput("read_mesh_reconstruct_pois_spacing",
-                             "Spacing parameter for Poisson reconstruction",
-                             min=0.001,
-                             value=1)
+        output$ui_reconstruct_pois_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)               &&
+               !is.null(input$read_mesh_reconstruct_method)      &&
+               !is.null(input$read_mesh_reconstruct_when)        &&
+               (input$meshes_input_source          == "file")    &&
+               (input$read_mesh_reconstruct_when   != "No")      &&
+               (input$read_mesh_reconstruct_method == "Poisson") &&
+               !is.null(input$read_mesh_reconstruct_pois_spmethod)) {
+                if(input$read_mesh_reconstruct_pois_spmethod == "knn") {
+                    spacing_default <- 12
+                    spacing_min     <- 2
+                    spacing_step    <- 1
+                } else {
+                    spacing_min     <- 0.001
+                    spacing_default <- 2
+                    spacing_step    <- 0.1
+                }
+                ## TODO
+                ## normals
+                tagList(numericInput("read_mesh_reconstruct_pois_normals",
+                                     "Normals Parameter",
+                                     min=2L,
+                                     value=12L,
+                                     step=1L),
+                        numericInput("read_mesh_reconstruct_pois_spacing",
+                                     "Spacing Parameter",
+                                     min=spacing_min,
+                                     value=spacing_default,
+                                     step=spacing_step),
+                        numericInput("read_mesh_reconstruct_pois_smang",
+                                     "SM Angle",
+                                     min=0L,
+                                     value=20L,
+                                     step=1L),
+                        numericInput("read_mesh_reconstruct_pois_smrad",
+                                     "SM Radius",
+                                     min=0,
+                                     value=30),
+                        numericInput("read_mesh_reconstruct_pois_smdst",
+                                     "SM Distance",
+                                     min=0,
+                                     value=0.375))
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_ballpivot_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "Ball_Pivot")) {
+                tagList(numericInput("read_mesh_reconstruct_ballpivot_radius",
+                                     "Radius",
+                                     min=0,
+                                     value=0,
+                                     step=0.01),
+                        numericInput("read_mesh_reconstruct_ballpivot_clust",
+                                     "Clustering",
+                                     min=0.01,
+                                     value=0.2,
+                                     step=0.01),
+                        numericInput("read_mesh_reconstruct_ballpivot_angle",
+                                     "Angle (rad)",
+                                     min=0.01,
+                                     value=pi/2,
+                                     step=0.01),
+                        checkboxInput("read_mesh_reconstruct_ballpviot_delface",
+                                     "Delete Faces?",
+                                     value=FALSE))
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_afs_jetsm_bool <- renderUI({
+            if(!is.null(input$meshes_input_source)            &&
+               !is.null(input$read_mesh_reconstruct_method)   &&
+               !is.null(input$read_mesh_reconstruct_when)     &&
+               (input$meshes_input_source          == "file") &&
+               (input$read_mesh_reconstruct_when   != "No")   &&
+               (input$read_mesh_reconstruct_method == "AFS")) {
+                checkboxInput("read_mesh_reconstruct_afs_jetsm_bool",
+                              "Jet Smoothing for AFS reconstruction?",
+                              value=FALSE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstruct_afs_jetsm_int <- renderUI({
+            if(!is.null(input$meshes_input_source)                  &&
+               !is.null(input$read_mesh_reconstruct_method)         &&
+               !is.null(input$read_mesh_reconstruct_when)           &&
+               (input$meshes_input_source          == "file")       &&
+               (input$read_mesh_reconstruct_when   != "No")         &&
+               (input$read_mesh_reconstruct_method == "AFS")        &&
+               !is.null(input$read_mesh_reconstruct_afs_jetsm_bool) &&
+               (input$read_mesh_reconstruct_afs_jetsm_bool)) {
+                numericInput("read_mesh_reconstruct_afs_jetsm_int",
+                             "Jet Smoothing integer for AFS reconstruction",
+                             min=2L,
+                             value=2L,
+                             step=1L)
             } else {
                 NULL
             }
@@ -371,7 +686,7 @@ shiny::shinyApp(
                 }
             })
         })
-        output$ui_compare_table <- DT::renderDataTable({
+        output$table_ui_compare <- DT::renderDataTable({
             meshL <- react_file_sel_sorted()
             if(!is.null(meshL)) {
                 pairL <- get_mesh_pairs(meshL, names_only=TRUE)
@@ -380,7 +695,7 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$print_mesh_info <- DT::renderDataTable({
+        output$table_mesh_info <- DT::renderDataTable({
             meshL <- react_file_sel_sorted()
             if(!is.null(meshL)) {
                 d_mesh_info <- get_mesh_info(meshL)
@@ -389,7 +704,7 @@ shiny::shinyApp(
                                         extensions="Buttons",
                                         options=list(dom='Bfrtip',
                                                      buttons=c("csv", "excel")))
-                DT::formatRound(DT_out, columns=cols_numeric, digits=3)
+                DT::formatRound(DT_out, columns=cols_numeric, digits=2)
             } else {
                 NULL
             }
@@ -420,16 +735,16 @@ shiny::shinyApp(
             }
         })
         output$rgl_mesh1_name <- renderUI({
-            p(get_name_elem(input$rgl_view_select, 1))
+            p(get_name_elem(input$rgl_view_select, pos=1L))
         })
         output$rgl_mesh2_name <- renderUI({
-            p(get_name_elem(input$rgl_view_select, 2))
+            p(get_name_elem(input$rgl_view_select, pos=2L))
         })
         output$rgl_dist1_name <- renderUI({
-            p(get_name_elem(input$rgl_view_select, 1))
+            p(get_name_elem(input$rgl_view_select, pos=1L))
         })
         output$rgl_dist2_name <- renderUI({
-            p(get_name_elem(input$rgl_view_select, 2))
+            p(get_name_elem(input$rgl_view_select, pos=2L))
         })
         output$table_agree_pairwise <- DT::renderDataTable({
             # input$apply_compare
@@ -442,7 +757,7 @@ shiny::shinyApp(
                                             extensions="Buttons",
                                             options=list(dom='Bfrtip',
                                                          buttons=c("csv", "excel")))
-                    DT::formatRound(DT_out, columns=cols_numeric, digits=3)
+                    DT::formatRound(DT_out, columns=cols_numeric, digits=2)
                 } else {
                     NULL
                 }
@@ -459,7 +774,7 @@ shiny::shinyApp(
                                             extensions="Buttons",
                                             options=list(dom='Bfrtip',
                                                          buttons=c("csv", "excel")))
-                    DT::formatRound(DT_out, columns=cols_numeric, digits=3)
+                    DT::formatRound(DT_out, columns=cols_numeric, digits=2)
                 } else {
                     NULL
                 }
@@ -515,7 +830,7 @@ shiny::shinyApp(
                 pairL <- get_mesh_pairs(meshL, names_only=FALSE)
                 mesh  <- pairL[[view_select]][["mesh_1"]]
                 if(!is.null(mesh)) {
-                    try(rgl.close())
+                    try(close3d())
                     wire3d(mesh[["mesh"]]$getMesh(rgl=TRUE))
                     rglwidget()
                 } else {
@@ -532,7 +847,7 @@ shiny::shinyApp(
                 pairL <- get_mesh_pairs(meshL, names_only=FALSE)
                 mesh  <- pairL[[view_select]][["mesh_2"]]
                 if(!is.null(mesh)) {
-                    try(rgl.close())
+                    try(close3d())
                     wire3d(mesh[["mesh"]]$getMesh(rgl=TRUE))
                     rglwidget()
                 } else {
@@ -549,7 +864,7 @@ shiny::shinyApp(
             if(!is.null(metroL) && !is.null(view_select)) {
                 metro <- metroL[[view_select]]
                 if(!is.null(metro)) {
-                    try(rgl.close())
+                    try(close3d())
                     shade3d(metro[["mesh_1"]])
                     rglwidget()
                 } else {
@@ -566,7 +881,7 @@ shiny::shinyApp(
             if(!is.null(metroL) && !is.null(view_select)) {
                 metro <- metroL[[view_select]]
                 if(!is.null(metro)) {
-                    try(rgl.close())
+                    try(close3d())
                     shade3d(metro[["mesh_2"]])
                     rglwidget()
                 } else {
