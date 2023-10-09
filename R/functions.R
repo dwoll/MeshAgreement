@@ -107,7 +107,11 @@ read_mesh_one <- function(x, name,
     
     if(reconstr_when == "yes") {
         argL <- c(list(x=mesh, method=reconstr_method), dotsL)
+<<<<<<< HEAD
         mesh <- do.call(reconstruct_mesh, argL)
+=======
+        mesh <- do.call("reconstruct_mesh", argL)
+>>>>>>> e176531ac9374766f2f7682a73583fe024f6141c
     }
     
     diag_nsi    <- !mesh$selfIntersects()
@@ -347,7 +351,6 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
 
         m1_rgl <- x[["mesh_1"]][["mesh"]]$getMesh(rgl=TRUE)
         m2_rgl <- x[["mesh_2"]][["mesh"]]$getMesh(rgl=TRUE)
-
         m_union_0     <- try(Boov::MeshesUnion(       list(m1_rgl, m2_rgl), clean=TRUE))
         m_intersect_0 <- try(Boov::MeshesIntersection(list(m1_rgl, m2_rgl), clean=TRUE))
         ui_ok         <- !(inherits(m_union_0,     "try-error") ||
@@ -396,7 +399,6 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
            !m_intersect$boundsVolume()) {
             m_intersect$orientToBoundVolume()
         }
-
         vol_u_0 <- m_union$volume()
         vol_i_0 <- m_intersect$volume()
         if(is.na(vol_u_0)                         ||
