@@ -107,11 +107,7 @@ read_mesh_one <- function(x, name,
     
     if(reconstr_when == "yes") {
         argL <- c(list(x=mesh, method=reconstr_method), dotsL)
-<<<<<<< HEAD
         mesh <- do.call(reconstruct_mesh, argL)
-=======
-        mesh <- do.call("reconstruct_mesh", argL)
->>>>>>> e176531ac9374766f2f7682a73583fe024f6141c
     }
     
     diag_nsi    <- !mesh$selfIntersects()
