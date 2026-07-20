@@ -1,6 +1,11 @@
-$Date: 2022-11-25 10:27:29 +0000 (Fri, 25 Nov 2022) $
+$Date: 2026-07-20 10:27:29 +0000 (Mon, 20 Jul 2026) $
 
 MESHAGREEMENT RELEASE VERSIONS at https://cran.r-project.org/
+
+Version 0.1.6 (July 20, 2026)
+    * Adapt all functions to use package CGALmeshops, a fork
+      and adaptation of packges Boov, PolygonSoup, and cgalMeshes
+      developed by Stéphane Laurent
 
 Version 0.1.5 (February 11, 2023)
     * read_mesh_one(), read_mesh_obs(), read_mesh():

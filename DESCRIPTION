@@ -1,13 +1,13 @@
 Package: MeshAgreement
 Type: Package
 Title: Agreement Measures for 3D Meshes
-Version: 0.1.5
-Date: 2023-02-11
+Version: 0.1.6
+Date: 2026-07-20
 Authors@R: c(person("Daniel", "Wollschlaeger", role=c("aut", "cre"), email="wollschlaeger@uni-mainz.de"),
     person("Heiko", "Karle", role="aut"))
 Depends: R (>= 3.5)
-Imports: stats, Rvcg, cgalMeshes
-Suggests: knitr, shiny, DT, bs4Dash, sortable, rgl, Boov
+Imports: stats, Rvcg, CGALmeshops
+Suggests: knitr, shiny, DT, bs4Dash, sortable, rgl
 VignetteBuilder: knitr
 LazyData: yes
 Description: Calculates distance-based and volume-overlap-based
@@ -23,3 +23,4 @@ Description: Calculates distance-based and volume-overlap-based
         Includes web-based graphical user interface.
 License: GPL (>= 2)
 URL: https://github.com/dwoll/MeshAgreement/
+Config/roxygen2/version: 8.0.0

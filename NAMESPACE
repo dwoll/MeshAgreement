@@ -1,8 +1,21 @@
 importFrom(stats, median, sd, var, aggregate, quantile, reshape, setNames)
-importFrom(utils, combn, capture.output, compareVersion, packageVersion)
+importFrom(utils, combn)
 importFrom(tools, file_path_sans_ext)
-importFrom(Rvcg, vcgMetro, vcgBallPivoting)
-importFrom(cgalMeshes, cgalMesh, AFSreconstruction)
+importFrom(Rvcg,
+           vcgBallPivoting,
+           vcgClean,
+           vcgIsotropicRemeshing,
+           vcgMetro,
+           vcgVolume)
+importFrom(CGALmeshops,
+           readMeshFile, writeMeshFile,
+           makeMesh,
+           toRGL,
+           meshIntersection, meshUnion, meshDifference,
+           reconstructAFS, reconstructSSS, reconstructPoisson,
+           doesSelfIntersect, doesBoundVolume, isClosed,
+           removeSelfIntersections, orientToBoundVolume,
+           getVolume, getCentroid)
 
 export(get_mesh_agree, get_mesh_agree_pair, get_mesh_agree_long,
        get_mesh_agree_aggr, get_mesh_agree_aggr_long,
@@ -12,5 +25,5 @@ export(get_mesh_agree, get_mesh_agree_pair, get_mesh_agree_long,
        get_mesh_pairs,
        get_mesh_info, get_mesh_info_obs, get_mesh_info_one,
        read_mesh, read_mesh_obs, read_mesh_one,
-       meshL_to_observerL, mesh3dL_to_cgalMeshL,
+       meshL_to_observerL, mesh3dL_to_CGALmeshL,
        run_gui)

@@ -7,13 +7,13 @@
 options(rgl.useNULL=TRUE)
 library(shiny)
 
-## saved builtin data has class mesh3d, not cgalMesh
-src_dir <- "www" # system.file("extdata", package="MeshAgreement")
+## saved builtin data has class mesh3d, not CGALmesh
+src_dir <- system.file("extdata", package="MeshAgreement") # "www"
 f_name  <- paste0(src_dir, "/mesh3d_heart_obsL.rda")
 
 cgalMesh_heart_obsL <- if(file.exists(f_name)) {
     mesh3d_heart_obsL <- readRDS(paste0(f_name))
-    mesh3dL_to_cgalMeshL(mesh3d_heart_obsL)
+    mesh3dL_to_CGALmeshL(mesh3d_heart_obsL)
 } else {
     NULL
 }
@@ -27,19 +27,18 @@ popup_info_impressum <- modalDialog(
         h3("Herausgeber"),
         p("Institut für Medizinische Biometrie, Epidemiologie und Informatik (IMBEI)", br(),
           "Universitätsmedizin der Johannes Gutenberg-Universität Mainz", br(),
-          "Obere Zahlbacher Straße 69", br(),
+          "Langenbeckstr. 1", br(),
           "55131 Mainz", br(),
-          "Tel +49 6131 17-3252", br(),
-          "Fax +49 6131 17-2968", br(), br(),
+          "Tel +49 6131 17-3252", br(), br(),
           "Die Universitätsmedizin Mainz ist eine Körperschaft des öffentlichen Rechts.", br(),
           "Vorsitzender des Aufsichtsrates:", br(),
-          "Staatssekretär Dr. Denis Alt", br(),
-          "Ministerium für Wissenschaft, Weiterbildung und Kultur", br(),
+          "Minister Clemens Hoch", br(),
+          "Ministerium für Wissenschaft, Weiterbildung und Gesundheit des Landes Rheinland-Pfalz", br(),
           "Mittlere Bleiche 61", br(),
-          "55116  Mainz", br(), br(),
+          "55116 Mainz", br(), br(),
           "Umsatzsteuer-Identifikationsnummer: DE149065652"),
         h3("Autor / Redaktion"),
-        p("Dieses Dashboard wurde von PD Dr. Daniel Wollschläger
+        p("Dieses Dashboard wurde von Prof. Dr. Daniel Wollschläger
           <wollschlaeger@uni-mainz.de> entwickelt."),
         h3("Haftung"),
         h4("Disclaimer"),
@@ -81,12 +80,10 @@ popup_info_impressum <- modalDialog(
           dieses Angebot umgehend aufgehoben, soweit dies technisch möglich
           und zumutbar ist."),
         h3("Urheberrecht"),
-        p("Copyright (c) 2022, IMBEI - Universitätsmedizin der Johannes
+        p("Copyright (c) 2026, IMBEI - Universitätsmedizin der Johannes
           Gutenberg-Universität Mainz.", br(),
           "Quelle und Copyright der verwendeten und hier wiedergegebenen Daten
-              sind jeweils kenntlich gemacht. Insbesondere liegt das Copyright
-              für Daten zu Sterbefällen und zur Bevölkerung beim Statistischen
-              Landesamt Rheinland-Pfalz.", br(),
+              sind jeweils kenntlich gemacht.", br(),
           "Icons: Font Awesome by Dave Gandy - http://fontawesome.io/", br(), br(),
           "Alle Rechte vorbehalten. Alle Inhalte der Internetpräsenz des IMBEI
           sind urheberrechtlich geschützt. Für die Vervielfältigung, Bearbeitung,
@@ -100,7 +97,7 @@ popup_info_impressum <- modalDialog(
           unsere Seiten verlinken."),
         h3("Datenschutz"),
         p("Es gelten die Datenschutz-Bestimmungen der",
-          tags$a(href="https://www.unimedizin-mainz.de/footer/datenschutz.html",
+          tags$a(href="https://www.unimedizin-mainz.de/datenschutz-an-der-um/uebersicht.html",
                  "Universitätsmedizin Mainz"),
           ".")
     ),

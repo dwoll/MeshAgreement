@@ -1,5 +1,5 @@
 get_name_pair <- function(x, y, sep=" <-> ") {
-    paste0(x, sep, y) 
+    paste0(x, sep, y)
 }
 
 get_name_elem <- function(x, pos=1L, sep=" <-> ") {
@@ -12,68 +12,37 @@ get_name_elem <- function(x, pos=1L, sep=" <-> ") {
     }
 }
 
-reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"), ...) {
+reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson", "Ball_Pivoting", "none"), ...) {
     method <- match.arg(tolower(method),
-                        choices=c("afs", "sss", "poisson", "ball_pivoting"))
-    
-    ## check functions available in cgalMeshes version
-    # cgalMeshes_has        <- ls(getNamespace("cgalMeshes"), all.names=TRUE)
-    # cgalMeshes_version    <- packageVersion("cgalMeshes")
-    # cgalMeshes_atleast110 <- compareVersion("1.0.0.1", as.character(cgalMeshes_version))
-    
-    ## ... as of cgalMeshes v1.1.0
+                        choices=c("afs", "sss", "poisson", "ball_pivoting", "none"))
+
+    ## arguments for reconstruction methods
     args_recon <- list(afs          =c("jetSmoothing"),
                        sss          =c("scaleIterations", "neighbors", "samples", "separateShells", "forceManifold", "borderAngle"),
                        poisson      =c("normals", "spacing", "sm_angle", "sm_radius", "sm_distance"),
                        ball_pivoting=c("radius", "clustering", "angle", "deleteFaces"))
-    
+
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
 
     if(method == "afs") {
-        # if(cgalMeshes_atleast110 <= 0L) {
-        #     argL <- c(list(points=x$getVertices()), dotsL_sub)
-        #     do.call("AFSreconstruction", argL)
-        # } else {
-            AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
-        # }
+        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
+        mesh_rgl <- do.call(reconstructAFS, argL)
+        makeMesh(mesh=mesh_rgl)
     } else if(method == "sss") {
-        # if("SSSreconstruction" %in% cgalMeshes_has) {
-        ## TODO
-        ## check: x$vertices() instead?
-            argL <- c(list(points=x$getVertices()), dotsL_sub)
-            do.call(cgalMeshes::SSSreconstruction, argL)
-        # } else {
-        #     warning("SSS reconstruction not implemented. Using AFS instead.")
-        #     if(cgalMeshes_atleast110 <= 0) {
-        #         dotsL_sub <- dotsL[names(dotsL) %in% args_recon[["afs"]]]
-        #         argL <- c(list(points=x$getVertices()), dotsL_sub)
-        #         do.call("AFSreconstruction", argL)
-        #     } else {
-        #         AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
-        #     }
-        # }
+        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
+        mesh_rgl <- do.call(reconstructSSS, argL)
+        makeMesh(mesh=mesh_rgl)
     } else if(method == "poisson") {
-        # if("PoissonReconstruction" %in% cgalMeshes_has) {
-        ## TODO
-        ## check: x$vertices() instead?
-            argL <- c(list(points=x$getVertices()), dotsL_sub)
-            do.call(cgalMeshes::PoissonReconstruction, argL)
-        # } else {
-        #     warning("Poisson reconstruction not implemented. Using AFS instead.")
-        #     if(cgalMeshes_atleast110 <= 0) {
-        #         dotsL_sub <- dotsL[names(dotsL) %in% args_recon[["afs"]]]
-        #         argL <- c(list(points=x$getVertices()), dotsL_sub)
-        #         do.call("AFSreconstruction", argL)
-        #     } else {
-        #         AFSreconstruction(x$vertices()) # for cgalMeshes 1.0.0
-        #     }
-        # }
+        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
+        mesh_rgl <- do.call(reconstructPoisson, argL)
+        makeMesh(mesh=mesh_rgl)
     } else if(method == "ball_pivoting") {
-        argL     <- c(list(x=x$getMesh()), dotsL_sub)
+        x_rgl    <- toRGL(x)
+        argL     <- c(list(x=x_rgl), dotsL_sub)
         mesh_rgl <- do.call("vcgBallPivoting", argL)
-        cgalMesh$new(mesh_rgl)
-    } else {
+        makeMesh(mesh=mesh_rgl)
+    } else if(method == "none") {
         x
     }
 }
@@ -82,53 +51,57 @@ read_mesh_one <- function(x, name,
                           fix_issues=TRUE,
                           iso_remesh=FALSE,
                           reconstr_when=c("No", "Fix_Issues", "Yes"),
-                          reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"),
+                          reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting", "none"),
                           ...) {
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
-    
+
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson", "ball_pivoting"))
-    
+                                 choices=c("afs", "sss", "poisson", "ball_pivoting", "none"))
+
     dotsL <- list(...)
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
         basename(tools::file_path_sans_ext(name))
     }
-    
-    mesh <- cgalMesh$new(x, clean=fix_issues)
-    
+
+    mesh_raw <- readMeshFile(x)
+    mesh_3D  <- makeMesh(mesh_raw[["vertices"]], mesh_raw[["faces"]])
+
     if(iso_remesh) {
-        args_iso_remesh=c("targetEdgeLength", "iterations", "relaxSteps")
-        dotsL_sub <- dotsL[names(dotsL) %in% args_iso_remesh]
-        do.call(mesh$isotropicRemeshing, dotsL_sub)
+        mesh_rgl    <- toRGL(mesh_3D)
+        # args_isorem <- c("targetEdgeLength", "iterations", "relaxSteps")
+        args_isorem <- c("TargetLen", "FeatureAngleDeg", "MaxSurfDist",
+                         "iterations", "Adaptive")
+        dotsL_sub   <- c(list(x=mesh_rgl),
+                         dotsL[names(dotsL) %in% args_isorem])
+        mesh_rgl_r  <- do.call(vcgIsotropicRemeshing, dotsL_sub)
+        mesh_3D     <- makeMesh(mesh=mesh_rgl_r) # TODO shortcut version
     }
-    
+
     if(reconstr_when == "yes") {
-        argL <- c(list(x=mesh, method=reconstr_method), dotsL)
-<<<<<<< HEAD
-        mesh <- do.call(reconstruct_mesh, argL)
-=======
-        mesh <- do.call("reconstruct_mesh", argL)
->>>>>>> e176531ac9374766f2f7682a73583fe024f6141c
+        argL    <- c(list(x=mesh_3D, method=reconstr_method), dotsL)
+        mesh_r0 <- do.call(reconstruct_mesh, argL)
+    } else {
+        mesh_r0 <- mesh_3D
     }
-    
-    diag_nsi    <- !mesh$selfIntersects()
-    diag_closed <- mesh$isClosed()
+
+    diag_nsi    <- !doesSelfIntersect(mesh_r0)
+    diag_closed <- isClosed(mesh_r0)
     diag_bv     <- if(diag_nsi && diag_closed) {
-        mesh$boundsVolume()
+        doesBoundVolume(mesh_r0)
     } else {
         FALSE
     }
 
     issues <- c("self intersects", "not closed", "does not bound volume")
-    
+
     if(!all(diag_nsi, diag_closed, diag_bv)) {
         warn_str <- paste0("Mesh ", mesh_name, " has these issues: ",
                            paste(issues[!c(diag_nsi, diag_closed, diag_bv)],
                                  collapse=", "))
-        
+
         if(fix_issues) {
             warn_str <- paste0(warn_str, ". Trying to fix.")
             warning(warn_str)
@@ -137,53 +110,55 @@ read_mesh_one <- function(x, name,
             ## if not already tried
             if(!diag_closed && (reconstr_when == "fix_issues")) {
                 warning("Trying AFS reconstruction to make mesh closed")
-                mesh_r <- reconstruct_mesh(mesh, method=reconstr_method, ...)
-                mesh   <- mesh_r
-                if(mesh$selfIntersects()) {
-                    mesh$removeSelfIntersections()
+                mesh_r1 <- reconstruct_mesh(mesh_r0, method=reconstr_method, ...)
+                if(doesSelfIntersect(mesh_r1)) {
+                    mesh_r1 <- removeSelfIntersections(mesh_r1)
                 }
-                
-                if(mesh$isClosed() && !mesh$selfIntersects()) {
-                    if(!mesh$boundsVolume()) {
-                        mesh$orientToBoundVolume()
+
+                if(isClosed(mesh_r1) && !doesSelfIntersect(mesh_r1)) {
+                    if(!doesBoundVolume(mesh_r1)) {
+                        mesh_r1 <- orientToBoundVolume(mesh_r1)
                     }
                 }
             } else {
                 if(!diag_nsi) {
-                    mesh$removeSelfIntersections()
+                    mesh_r1 <- removeSelfIntersections(mesh_r0)
                 }
-                
+
                 if(!diag_bv) {
-                    mesh$orientToBoundVolume()
+                    mesh_r1 <- orientToBoundVolume(mesh_r1)
                 }
             }
         } else {
+            mesh_r1 <- mesh_r0
             warning(warn_str)
         }
+    } else {
+        mesh_r1 <- mesh_r0
     }
-       
-    vol_0 <- try(mesh$volume())
-    ctr_0 <- try(mesh$centroid())
-    
+
+    vol_0 <- try(getVolume(mesh_r1))
+    ctr_0 <- try(getCentroid(mesh_r1))
+
     vol <- if(!inherits(vol_0, "try-error")) {
         if(vol_0 <= 0) {
-            mesh$orientToBoundVolume()
-            vol_0 <- mesh$volume()
+            mesh_r1 <- orientToBoundVolume(mesh_r1)
+            vol_0   <- volume(mesh_r1)
         }
-        
+
         vol_0
     } else {
         NA_real_
     }
-    
+
     ctr <- if(!inherits(ctr_0, "try-error")) {
         ctr_0
     } else {
-        rep(NA_real_, 3)
+        rep(NA_real_, 3L)
     }
-    
+
     list(name    =mesh_name,
-         mesh    =mesh,
+         mesh    =mesh_r1,
          volume  =vol,
          centroid=ctr)
 }
@@ -196,26 +171,26 @@ read_mesh_obs <- function(x, name,
                           ...) {
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
-    
+
     reconstr_method <- match.arg(tolower(reconstr_method),
                                  choices=c("afs", "sss", "poisson", "ball_pivoting"))
-    
+
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
         basename(tools::file_path_sans_ext(name))
     }
-    
+
     meshL <- lapply(seq_along(x), function(i) {
         read_mesh_one(x[i],
-                      name=mesh_names[i],
-                      fix_issues=fix_issues,
-                      iso_remesh=iso_remesh,
-                      reconstr_when=reconstr_when,
+                      name           =mesh_names[i],
+                      fix_issues     =fix_issues,
+                      iso_remesh     =iso_remesh,
+                      reconstr_when  =reconstr_when,
                       reconstr_method=reconstr_method,
                       ...)
     })
-    
+
     setNames(meshL, mesh_names)
 }
 
@@ -227,39 +202,39 @@ read_mesh <- function(x, name,
                       ...) {
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
-    
+
     reconstr_method <- match.arg(tolower(reconstr_method),
                                  choices=c("afs", "sss", "poisson", "ball_pivoting"))
-    
+
     dotsL <- list(...)
-    
+
     obs_names <- if(missing(name)) {
         names(x)
     } else {
         names(name)
     }
-    
+
     mesh_names <- if(missing(name)) {
         lapply(x, function(y) { basename(tools::file_path_sans_ext(y)) })
     } else {
         lapply(x, function(y) { basename(tools::file_path_sans_ext(name)) })
     }
-    
+
     Map(read_mesh_obs,
         setNames(x, obs_names),
         mesh_names,
-        fix_issues=fix_issues,
-        iso_remesh=iso_remesh,
-        reconstr_when=reconstr_when,
+        fix_issues     =fix_issues,
+        iso_remesh     =iso_remesh,
+        reconstr_when  =reconstr_when,
         reconstr_method=reconstr_method,
         list(dotsL))
     }
 
 get_mesh_info_one <- function(x) {
-    mesh_list <- x[["mesh"]]$getMesh(rgl=FALSE)
+    mesh <- x[["mesh"]]
     data.frame(name=x[["name"]],
-               n_verts=nrow(mesh_list[["vertices"]]),
-               n_faces=ncol(mesh_list[["faces"]]),
+               n_verts=nrow(mesh[["vertices"]]),
+               n_faces=ncol(mesh[["faces"]]),
                volume=x[["volume"]],
                ctr_x=x[["centroid"]][1],
                ctr_y=x[["centroid"]][2],
@@ -284,11 +259,11 @@ get_mesh_info <- function(x) {
 ## generate all observer-pairs for each corresponding mesh-list entry
 get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
     if(length(x) <= 1L) { stop("Need more than 1 mesh for comparisons") }
-    
+
     ## number of meshes per observer
     n_obs_meshes <- lengths(x) # may be different per observer
     n_meshes     <- max(n_obs_meshes)
-    
+
     ## for given pair, put corresponding meshes in a list
     get_pair_mesh <- function(pair, mesh) {
         idx1  <- pairs_idx[pair, 1L] # index observer 1
@@ -299,7 +274,7 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
         if((length(obs1) >= mesh) && (length(obs2) >= mesh)) {
             mesh_1 <- x[[idx1]][[mesh]]
             mesh_2 <- x[[idx2]][[mesh]]
-            
+
             ## add group information -> same structure
             if(names_only) {
                 list(name=get_name_pair(mesh_1[["name"]], mesh_2[["name"]], sep=sep),
@@ -314,17 +289,17 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
             NULL
         }
     }
-    
+
     pairs_idx <- if(length(x) >= 2L) {
         t(combn(seq_along(x), 2L))
     } else {
         matrix(c(1L, 1L), ncol=2L)
     }
-    
+
     ll_outer <- lapply(seq_len(n_meshes), function(idx_mesh) {
         lapply(seq_len(nrow(pairs_idx)), function(idx_pair) { get_pair_mesh(idx_pair, idx_mesh) })
     })
-    
+
     ## weed out NULL components
     ll <- Filter(Negate(is.null), unlist(ll_outer, recursive=FALSE))
     pair_names <- lapply(ll, function(x) { x[["name"]] })
@@ -332,44 +307,19 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
 }
 
 ## union and intersection for list of two meshes x
-get_mesh_ui_pair <- function(x, boov=FALSE) {
-    if(!boov) {
-        ## make copies because union() and intersection()
-        ## are mutating
-        m1_copy1    <- x[["mesh_1"]][["mesh"]]$copy()
-        m1_copy2    <- x[["mesh_1"]][["mesh"]]$copy()
-        m2_copy1    <- x[["mesh_2"]][["mesh"]]$copy()
-        m2_copy2    <- x[["mesh_2"]][["mesh"]]$copy()
-        m_union     <- try(m1_copy1$union(       m2_copy1))
-        m_intersect <- try(m1_copy2$intersection(m2_copy2))
-        ui_ok       <- !(inherits(m_union,     "try-error") ||
-                         inherits(m_intersect, "try-error"))
-    } else {
-        have_Boov <- requireNamespace("Boov", quietly=TRUE, partial=TRUE)
-        if(!have_Boov) { warning("Package 'Boov' required for 'boov=TRUE' but not found.") }
-        stopifnot(have_Boov)
+get_mesh_ui_pair <- function(x) {
+    m1 <- x[["mesh_1"]][["mesh"]]
+    m2 <- x[["mesh_2"]][["mesh"]]
+    m_union     <- try(meshUnion(       list(m1, m2), clean=TRUE))
+    m_intersect <- try(meshIntersection(list(m1, m2), clean=TRUE))
+    ui_ok       <- !(inherits(m_union,     "try-error") ||
+                     inherits(m_intersect, "try-error"))
 
-        m1_rgl <- x[["mesh_1"]][["mesh"]]$getMesh(rgl=TRUE)
-        m2_rgl <- x[["mesh_2"]][["mesh"]]$getMesh(rgl=TRUE)
-        m_union_0     <- try(Boov::MeshesUnion(       list(m1_rgl, m2_rgl), clean=TRUE))
-        m_intersect_0 <- try(Boov::MeshesIntersection(list(m1_rgl, m2_rgl), clean=TRUE))
-        ui_ok         <- !(inherits(m_union_0,     "try-error") ||
-                           inherits(m_intersect_0, "try-error"))
-
-        if(ui_ok) {
-            m_union_rgl     <- Boov::toRGL(m_union_0)
-            m_intersect_rgl <- Boov::toRGL(m_intersect_0)
-
-            ## intersection might be empty
-            ## then cgalMesh$new() throws an error
-            ## TODO cgalMeshes will fix this
-            if((nrow(m_union_0[["faces"]])     > 0L) &&
-               (nrow(m_intersect_0[["faces"]]) > 0L)) {
-                m_union     <- cgalMesh$new(m_union_rgl)
-                m_intersect <- cgalMesh$new(m_intersect_rgl)
-            } else {
-                ui_ok <- FALSE
-            }
+    if(ui_ok) {
+        ## intersection might be empty
+        if(!((nrow(m_union[["faces"]])     > 0L) &&
+             (nrow(m_intersect[["faces"]]) > 0L))) {
+            ui_ok <- FALSE
         }
     }
 
@@ -379,28 +329,31 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
         vol_u       <- NA_real_
         vol_i       <- NA_real_
     } else {
-        if(m_union$selfIntersects()) {
-            m_union$removeSelfIntersections()
+        if(doesSelfIntersect(m_union)) {
+            m_union <- removeSelfIntersections(m_union)
         }
 
-        if(m_intersect$selfIntersects()) {
-            m_intersect$removeSelfIntersections()
+        if(doesSelfIntersect(m_intersect)) {
+            m_intersect <- removeSelfIntersections(m_intersect)
         }
 
-        vol_u_0 <- try(m_union$volume())
-        vol_i_0 <- try(m_intersect$volume())
+        vol_u_0 <- try(getVolume(m_union))
+        vol_i_0 <- try(getVolume(m_intersect))
+
+        if(inherits(vol_u_0, "try-error") || (vol_u_0 <= 0) ||
+           inherits(vol_i_0, "try-error") || (vol_i_0 <= 0)) {
+            if(!doesBoundVolume(m_union)) {
+                m_union <- orientToBoundVolume(m_union)
+            }
         
-        if((!inherits(vol_u_0, "try-error") && (vol_u_0 <= 0)) ||
-           !m_union$boundsVolume()) {
-            m_union$orientToBoundVolume()
+            if(!doesBoundVolume(m_intersect)) {
+                m_intersect <- orientToBoundVolume(m_intersect)
+            }
+        
+            vol_u_0 <- getVolume(m_union)
+            vol_i_0 <- getVolume(m_intersect)
         }
 
-        if((!inherits(vol_i_0, "try-error") && (vol_i_0 <= 0)) ||
-           !m_intersect$boundsVolume()) {
-            m_intersect$orientToBoundVolume()
-        }
-        vol_u_0 <- m_union$volume()
-        vol_i_0 <- m_intersect$volume()
         if(is.na(vol_u_0)                         ||
            is.na(vol_i_0)                         ||
            (vol_u_0 <= 0)                         ||
@@ -416,21 +369,21 @@ get_mesh_ui_pair <- function(x, boov=FALSE) {
         }
     }
 
-    list(name=x[["name"]],
-         union=m_union,
+    list(name        =x[["name"]],
+         union       =m_union,
          intersection=m_intersect,
-         vol_u=vol_u,
-         vol_i=vol_i)    
+         vol_u       =vol_u,
+         vol_i       =vol_i)
 }
 
-get_mesh_ui <- function(x, boov=FALSE) {
+get_mesh_ui <- function(x) {
     pairL <- get_mesh_pairs(x)
-    Map(get_mesh_ui_pair, pairL, boov=boov)
+    Map(get_mesh_ui_pair, pairL)
 }
 
 get_mesh_metro_pair <- function(x, chop=TRUE, ...) {
-    metro <- vcgMetro(x[["mesh_1"]][["mesh"]]$getMesh(),
-                      x[["mesh_2"]][["mesh"]]$getMesh(),
+    metro <- vcgMetro(toRGL(x[["mesh_1"]][["mesh"]]),
+                      toRGL(x[["mesh_2"]][["mesh"]]),
                       ...)
 
     if(chop) {
@@ -455,7 +408,7 @@ get_mesh_metro <- function(x, chop=TRUE, ...) {
 }
 
 ## distance measures, union, intersection for each mesh pair
-get_mesh_agree_pair <- function(x, metro, ui, boov=FALSE, do_ui=FALSE, chop=TRUE, ...) {
+get_mesh_agree_pair <- function(x, metro, ui, do_ui=FALSE, chop=TRUE, ...) {
     ## distance-based measures
     if(missing(metro)) {
         metro <- get_mesh_metro_pair(x, chop=chop, ...)
@@ -495,18 +448,18 @@ get_mesh_agree_pair <- function(x, metro, ui, boov=FALSE, do_ui=FALSE, chop=TRUE
     ## volume-overlap-based measures
     ## check if union/intersection are supplied
     if(missing(ui) && do_ui) {
-        ui <- get_mesh_ui_pair(x, boov=boov)
+        ui <- get_mesh_ui_pair(x)
     }
-    
+
     vol_1 <- x[["mesh_1"]][["volume"]]
     vol_2 <- x[["mesh_2"]][["volume"]]
-    
+
     if(do_ui && !is.null(ui) && !is.null(ui[["union"]]) && !is.null(ui[["intersection"]])) {
         vol_u <- ui[["vol_u"]]
         vol_i <- ui[["vol_i"]]
         JSC   <-   vol_i / vol_u
         DSC   <- 2*vol_i / (vol_1 + vol_2)
-        
+
         ## TODO TP, FP, TN, FN
     } else {
         vol_u <- NA_real_
@@ -531,7 +484,7 @@ get_mesh_agree_pair <- function(x, metro, ui, boov=FALSE, do_ui=FALSE, chop=TRUE
                DSC   =DSC)
 }
 
-get_mesh_agree <- function(x, boov=FALSE, do_ui=FALSE, chop=TRUE, ...) {
+get_mesh_agree <- function(x, do_ui=FALSE, chop=TRUE, ...) {
     pairL  <- get_mesh_pairs(x)
     metroL <- Map(get_mesh_metro_pair, pairL, chop=chop, ...)
     uiL    <- if(do_ui) {
@@ -544,7 +497,6 @@ get_mesh_agree <- function(x, boov=FALSE, do_ui=FALSE, chop=TRUE, ...) {
                   pairL,
                   metro=metroL,
                   ui   =uiL,
-                  boov =boov,
                   do_ui=do_ui,
                   chop =chop)
 
@@ -558,60 +510,60 @@ get_mesh_agree_long <- function(x) {
                       "HD_max", "HD_avg", "ASD", "RMSD",
                       "vol_u", "vol_i",
                       "JSC", "DSC")
-    
+
     vars_id <- names(x)[!(names(x) %in% vars_varying)]
-    
+
     dL <- reshape(x,
                   direction="long",
                   idvar    =vars_id,
                   varying  =vars_varying,
                   v.names  ="observed",
                   timevar  ="metric")
-    
+
     rownames(dL) <- NULL
-    
+
     dL[["metric"]] <- factor(dL[["metric"]],
                              levels=seq_along(vars_varying),
                              labels=vars_varying)
-    
+
     dL
 }
 
 get_mesh_agree_aggr <- function(x, na.rm=FALSE) {
     d_agreeL <- get_mesh_agree_long(x)
     d_agreeL[["observed_ln"]] <- log(d_agreeL[["observed"]])
-    
+
     d_mean   <- aggregate(observed    ~ group + metric, FUN=mean,   data=d_agreeL, na.rm=na.rm)
     d_median <- aggregate(observed    ~ group + metric, FUN=median, data=d_agreeL, na.rm=na.rm)
     d_sd     <- aggregate(observed    ~ group + metric, FUN=sd,     data=d_agreeL, na.rm=na.rm)
     d_var    <- aggregate(observed    ~ group + metric, FUN=var,    data=d_agreeL, na.rm=na.rm)
     d_varlog <- aggregate(observed_ln ~ group + metric, FUN=var,    data=d_agreeL, na.rm=na.rm)
-    
+
     d_aggr <- Reduce(function(x, y) { suppressWarnings(merge(x, y, by=c("group", "metric"))) },
                      list(d_mean, d_median, d_sd, d_var, d_varlog))
-    
+
     names(d_aggr)       <- c("group", "metric", "Mean", "Median", "SD", "VAR", "VAR_log")
     d_aggr[["CV"]]      <- d_aggr[["SD"]] / d_aggr[["Mean"]]
     d_aggr[["CV_ln"]]   <- sqrt(exp(d_aggr[["VAR_log"]]) - 1)
     d_aggr[["VAR"]]     <- NULL
     d_aggr[["VAR_log"]] <- NULL
-    
+
     d_aggr
 }
 
 get_mesh_agree_aggr_long <- function(x) {
     vars_varying <- c("Mean", "Median", "SD", "CV", "CV_ln")
     vars_id      <- names(x)[!(names(x) %in% vars_varying)]
-    
+
     dL <- reshape(x,
                   direction="long",
                   idvar    =vars_id,
                   varying  =vars_varying,
                   v.names  ="observed",
                   timevar  ="statistic")
-    
+
     rownames(dL) <- NULL
-    
+
     dL[["statistic"]] <- factor(dL[["statistic"]],
                                 levels=seq_along(vars_varying),
                                 labels=vars_varying)
@@ -623,22 +575,22 @@ meshL_to_observerL <- function(x) {
     ll <- Map(function(i, name) {
         setNames(list(i), name)
     }, x, names(x))
-    
+
     setNames(ll, sprintf("Observer_%.2d", seq_along(ll)))
 }
 
-mesh3dL_to_cgalMeshL <- function(x) {
+mesh3dL_to_CGALmeshL <- function(x) {
     convert_mesh_one <- function(y) {
         if(inherits(y[["mesh"]], "mesh3d")) {
-            y[["mesh"]] <- cgalMeshes::cgalMesh$new(y[["mesh"]])
+            y[["mesh"]] <- makeMesh(mesh=y[["mesh"]])
         }
-        
+
         y
     }
-    
+
     convert_meshL <- function(z) {
         lapply(z, convert_mesh_one)
     }
-    
+
     lapply(x, convert_meshL)
 }

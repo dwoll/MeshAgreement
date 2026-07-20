@@ -31,14 +31,14 @@ fluidPage(
                          tagList(uiOutput("ui_import_fix_note"),
                                  uiOutput("ui_import_fix"),
                                  uiOutput("ui_iso_remesh_opts"),
-                                 uiOutput("ui_reconstruct_when"),
-                                 uiOutput("ui_reconstruct_method"),
-                                 uiOutput("ui_reconstruct_afs_jetsm_bool"),
-                                 uiOutput("ui_reconstruct_afs_jetsm_int"),
-                                 uiOutput("ui_reconstruct_sss_opts"),
-                                 uiOutput("ui_reconstruct_pois_method"),
-                                 uiOutput("ui_reconstruct_pois_opts"),
-                                 uiOutput("ui_reconstruct_ballpivot_opts")))
+                                 uiOutput("ui_reconstr_when"),
+                                 uiOutput("ui_reconstr_method"),
+                                 uiOutput("ui_reconstr_afs_jetsm_bool"),
+                                 uiOutput("ui_reconstr_afs_jetsm_int"),
+                                 uiOutput("ui_reconstr_sss_opts"),
+                                 uiOutput("ui_reconstr_pois_method"),
+                                 uiOutput("ui_reconstr_pois_opts"),
+                                 uiOutput("ui_reconstr_ballpivot_opts")))
             )
         )
     ),
@@ -54,7 +54,7 @@ fluidPage(
                 closable=FALSE,
                 maximizable=FALSE,
                 collapsible=FALSE,
-                uiOutput("ui_reconstruct_cave"),
+                uiOutput("ui_reconstr_cave"),
                 actionButton("apply_file_sel", "Apply")
             )
         )
