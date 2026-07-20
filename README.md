@@ -20,7 +20,7 @@ Agreement measures for 3D structures saved as mesh files. R package containing a
 `MeshAgreement` heavily relies on packages developed by Stéphane Laurent, which build on package [RcppCGAL](https://https://github.com/ericdunipace/RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry. The second back-end for geometry calculations is the [VCG Library](http://www.vcglib.net/).
 
   * [Rvcg](https://CRAN.R-project.org/package=Rvcg)
-  * [CGALmeshops](https://github.com/stla/CGALmeshops) - not yet public as of 2026-07-20
+  * [CGALmeshops](https://github.com/dwoll/CGALmeshops) - not yet public as of 2026-07-20
   * [shiny](https://CRAN.R-project.org/package=shiny)
   * [bs4Dash](https://CRAN.R-project.org/package=bs4Dash)
   * [DT](https://CRAN.R-project.org/package=DT)
