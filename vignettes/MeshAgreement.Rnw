@@ -120,7 +120,7 @@ library(MeshAgreement, verbose=FALSE)
 
 ## get agreement measures for all pairs from list of meshes
 ## data_heart_obsL: list of sample meshes included in MeshAgreement
-heartL <- mesh3dL_to_cgalMeshL(data_heart_obsL)
+heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 
 ## omit JSC/DSC to reduce run-time
 agreeW <- get_mesh_agree(heartL, do_ui=FALSE, silent=TRUE)
@@ -221,7 +221,7 @@ Information on the imported meshes can be printed.
 
 <<cPrintMesh>>=
 ## data_heart_obsL: list of sample meshes included in MeshAgreement
-heartL <- mesh3dL_to_cgalMeshL(data_heart_obsL)
+heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 get_mesh_info(heartL)
 @
 
@@ -259,7 +259,7 @@ The functions that calculate agreement measures all have two versions.
 
 <<cMeshAgreementA>>=
 ## already called above
-# heartL <- mesh3dL_to_cgalMeshL(data_heart_obsL)
+# heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 # agreeW <- get_mesh_agree(heartL, silent=TRUE)
 agreeW
 @
