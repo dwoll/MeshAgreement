@@ -12,19 +12,47 @@ get_name_elem <- function(x, pos=1L, sep=" <-> ") {
     }
 }
 
-reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson", "Ball_Pivoting", "none"), ...) {
+remesh_mesh <- function(x, method=c("Isotropic", "none"), ...) {
     method <- match.arg(tolower(method),
-                        choices=c("afs", "sss", "poisson", "ball_pivoting", "none"))
+                        choices=c("isotropic", "none"))
+    
+    ## arguments for remesh methods
+    args_remesh <- list(isotropic=c("TargetLen", "FeatureAngleDeg",
+                                    "MaxSurfDist", "iterations", "Adaptive"))
+    
+    dotsL     <- list(...)
+    dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
+    
+    if(method == "isotropic") {
+        x_rgl      <- toRGL(x)
+        argL       <- c(list(x=x_rgl), dotsL_sub)
+        mesh_rgl_r <- do.call(vcgIsotropicRemeshing, argL)
+        makeMesh(mesh=mesh_rgl_r) # TODO shortcut version
+    } else if(method == "none") {
+        x
+    }
+}
+
+reconstruct_mesh <- function(x,
+                             method=c("AFS", "SSS", "Poisson",
+                                      "Ball_Pivoting", "Alpha_Wrap",
+                                      "none"),
+                             ...) {
+    method <- match.arg(tolower(method),
+                        choices=c("afs", "sss", "poisson",
+                                  "ball_pivoting", "alpha_wrap",
+                                  "none"))
 
     ## arguments for reconstruction methods
     args_recon <- list(afs          =c("jetSmoothing"),
                        sss          =c("scaleIterations", "neighbors", "samples", "separateShells", "forceManifold", "borderAngle"),
-                       poisson      =c("normals", "spacing", "sm_angle", "sm_radius", "sm_distance"),
-                       ball_pivoting=c("radius", "clustering", "angle", "deleteFaces"))
+                       poisson      =c("normals", "normals_method", "spacing", "sm_angle", "sm_radius", "sm_distance"),
+                       ball_pivoting=c("radius", "clustering", "angle", "deleteFaces"),
+                       alpha_wrap   =c("alpha_rel", "offset_rel"))
 
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
-
+    
     if(method == "afs") {
         argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call(reconstructAFS, argL)
@@ -34,6 +62,18 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson", "Ball_Pivoting
         mesh_rgl <- do.call(reconstructSSS, argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "poisson") {
+        normals_method <- dotsL_sub[["normals_method"]]
+        if(!is.null(normals_method)) {
+            pnm     <- tolower(normals_method)
+            normals <- dotsL_sub[["normals"]]
+            if(!is.null(normals) &&
+               (pnm %in% c("jet", "pca"))) {
+                dotsL_sub[["normals"]] <- getSomeNormals(normals, method=pnm)
+            }
+
+            dotsL_sub[["normals_method"]] <- NULL
+        }
+
         argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call(reconstructPoisson, argL)
         makeMesh(mesh=mesh_rgl)
@@ -42,23 +82,38 @@ reconstruct_mesh <- function(x, method=c("AFS", "SSS", "Poisson", "Ball_Pivoting
         argL     <- c(list(x=x_rgl), dotsL_sub)
         mesh_rgl <- do.call("vcgBallPivoting", argL)
         makeMesh(mesh=mesh_rgl)
+    } else if(method == "alpha_wrap") {
+        x_rgl    <- toRGL(x)
+        argL     <- c(list(x=x_rgl), dotsL_sub)
+        mesh_rgl <- do.call("alphaWrap", argL)
+        makeMesh(mesh=mesh_rgl)
     } else if(method == "none") {
         x
     }
 }
 
-read_mesh_one <- function(x, name,
+read_mesh_one <- function(x,
+                          name,
                           fix_issues=TRUE,
-                          iso_remesh=FALSE,
-                          reconstr_when=c("No", "Fix_Issues", "Yes"),
-                          reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting", "none"),
+                          remesh    =FALSE,
+                          remesh_method  =c("Isotropic", "none"),
+                          reconstr_when  =c("No", "Fix_Issues", "Yes"),
+                          reconstr_method=c("AFS", "SSS", "Poisson",
+                                            "Ball_Pivoting", "Alpha_Wrap",
+                                            "none"),
                           ...) {
+    remesh_method <- match.arg(tolower(remesh_method),
+                               choices=c("isotropic", "none"))
+    
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
 
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson", "ball_pivoting", "none"))
+                                 choices=c("afs", "sss", "poisson",
+                                           "ball_pivoting", "alpha_wrap",
+                                           "none"))
 
+    ## collect arguments intended to be passed to other functions
     dotsL <- list(...)
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -67,37 +122,37 @@ read_mesh_one <- function(x, name,
     }
 
     mesh_raw <- readMeshFile(x)
-    mesh_3D  <- makeMesh(mesh_raw[["vertices"]], mesh_raw[["faces"]])
+    mesh_in  <- makeMesh(mesh_raw[["vertices"]], mesh_raw[["faces"]])
 
-    if(iso_remesh) {
-        mesh_rgl    <- toRGL(mesh_3D)
-        # args_isorem <- c("targetEdgeLength", "iterations", "relaxSteps")
-        args_isorem <- c("TargetLen", "FeatureAngleDeg", "MaxSurfDist",
-                         "iterations", "Adaptive")
-        dotsL_sub   <- c(list(x=mesh_rgl),
-                         dotsL[names(dotsL) %in% args_isorem])
-        mesh_rgl_r  <- do.call(vcgIsotropicRemeshing, dotsL_sub)
-        mesh_3D     <- makeMesh(mesh=mesh_rgl_r) # TODO shortcut version
-    }
-
-    if(reconstr_when == "yes") {
-        argL    <- c(list(x=mesh_3D, method=reconstr_method), dotsL)
-        mesh_r0 <- do.call(reconstruct_mesh, argL)
+    ## re-mesh?
+    mesh_r0 <- if(remesh) {
+        argL <- c(list(x=mesh_in, method=remesh_method), dotsL)
+        do.call(remesh_mesh, argL)
     } else {
-        mesh_r0 <- mesh_3D
+        mesh_in
     }
 
-    diag_nsi    <- !doesSelfIntersect(mesh_r0)
-    diag_closed <- isClosed(mesh_r0)
+    ## reconstruct in any case?
+    mesh_r1 <- if(reconstr_when == "yes") {
+        argL <- c(list(x=mesh_r0, method=reconstr_method), dotsL)
+        do.call(reconstruct_mesh, argL)
+    } else {
+        mesh_r0
+    }
+
+    ## check mesh
+    diag_nsi    <- !doesSelfIntersect(mesh_r1)
+    diag_closed <- isClosed(mesh_r1)
     diag_bv     <- if(diag_nsi && diag_closed) {
-        doesBoundVolume(mesh_r0)
+        doesBoundVolume(mesh_r1)
     } else {
         FALSE
     }
 
     issues <- c("self intersects", "not closed", "does not bound volume")
 
-    if(!all(diag_nsi, diag_closed, diag_bv)) {
+    ## any issue?
+    mesh_r2 <- if(!all(diag_nsi, diag_closed, diag_bv)) {
         warn_str <- paste0("Mesh ", mesh_name, " has these issues: ",
                            paste(issues[!c(diag_nsi, diag_closed, diag_bv)],
                                  collapse=", "))
@@ -109,41 +164,46 @@ read_mesh_one <- function(x, name,
             ## try surface reconstruction to make mesh closed
             ## if not already tried
             if(!diag_closed && (reconstr_when == "fix_issues")) {
-                warning("Trying AFS reconstruction to make mesh closed")
-                mesh_r1 <- reconstruct_mesh(mesh_r0, method=reconstr_method, ...)
-                if(doesSelfIntersect(mesh_r1)) {
-                    mesh_r1 <- removeSelfIntersections(mesh_r1)
+                warning("Trying reconstruction to make mesh closed")
+                mesh_r1a <- reconstruct_mesh(mesh_r1, method=reconstr_method, ...)
+                if(doesSelfIntersect(mesh_r1a)) {
+                    mesh_r1a <- removeSelfIntersections(mesh_r1a)
                 }
 
-                if(isClosed(mesh_r1) && !doesSelfIntersect(mesh_r1)) {
-                    if(!doesBoundVolume(mesh_r1)) {
-                        mesh_r1 <- orientToBoundVolume(mesh_r1)
+                if(isClosed(mesh_r1a) && !doesSelfIntersect(mesh_r1a)) {
+                    if(!doesBoundVolume(mesh_r1a)) {
+                        mesh_r1a <- orientToBoundVolume(mesh_r1a)
                     }
                 }
+                
+                mesh_r1a
             } else {
                 if(!diag_nsi) {
-                    mesh_r1 <- removeSelfIntersections(mesh_r0)
+                    mesh_r1a <- removeSelfIntersections(mesh_r1)
                 }
 
                 if(!diag_bv) {
-                    mesh_r1 <- orientToBoundVolume(mesh_r1)
+                    mesh_r1a <- orientToBoundVolume(mesh_r1a)
                 }
+                
+                mesh_r1a
             }
         } else {
-            mesh_r1 <- mesh_r0
             warning(warn_str)
+            mesh_r1
         }
     } else {
-        mesh_r1 <- mesh_r0
+        ## no issue
+        mesh_r1
     }
 
-    vol_0 <- try(getVolume(mesh_r1))
-    ctr_0 <- try(getCentroid(mesh_r1))
+    vol_0 <- try(getVolume(mesh_r2))
+    ctr_0 <- try(getCentroid(mesh_r2))
 
     vol <- if(!inherits(vol_0, "try-error")) {
         if(vol_0 <= 0) {
-            mesh_r1 <- orientToBoundVolume(mesh_r1)
-            vol_0   <- volume(mesh_r1)
+            mesh_r2 <- orientToBoundVolume(mesh_r2)
+            vol_0   <- volume(mesh_r2)
         }
 
         vol_0
@@ -158,22 +218,31 @@ read_mesh_one <- function(x, name,
     }
 
     list(name    =mesh_name,
-         mesh    =mesh_r1,
+         mesh    =mesh_r2,
          volume  =vol,
          centroid=ctr)
 }
 
-read_mesh_obs <- function(x, name,
+read_mesh_obs <- function(x,
+                          name,
                           fix_issues=TRUE,
-                          iso_remesh=FALSE,
-                          reconstr_when=c("No", "Fix_Issues", "Yes"),
-                          reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"),
+                          remesh    =FALSE,
+                          remesh_method  =c("Isotropic", "none"),
+                          reconstr_when  =c("No", "Fix_Issues", "Yes"),
+                          reconstr_method=c("AFS", "SSS", "Poisson",
+                                            "Ball_Pivoting", "Alpha_Wrap",
+                                            "none"),
                           ...) {
+    remesh_method <- match.arg(tolower(remesh_method),
+                               choices=c("isotropic", "none"))
+    
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
 
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson", "ball_pivoting"))
+                                 choices=c("afs", "sss", "poisson",
+                                           "ball_pivoting", "alpha_wrap",
+                                           "none"))
 
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -185,7 +254,8 @@ read_mesh_obs <- function(x, name,
         read_mesh_one(x[i],
                       name           =mesh_names[i],
                       fix_issues     =fix_issues,
-                      iso_remesh     =iso_remesh,
+                      remesh         =remesh,
+                      remesh_method  =remesh_method,
                       reconstr_when  =reconstr_when,
                       reconstr_method=reconstr_method,
                       ...)
@@ -194,12 +264,19 @@ read_mesh_obs <- function(x, name,
     setNames(meshL, mesh_names)
 }
 
-read_mesh <- function(x, name,
+read_mesh <- function(x,
+                      name,
                       fix_issues=TRUE,
-                      iso_remesh=FALSE,
-                      reconstr_when=c("No", "Fix_Issues", "Yes"),
-                      reconstr_method=c("AFS", "SSS", "Poisson", "Ball_Pivoting"),
+                      remesh    =FALSE,
+                      remesh_method  =c("isotropic", "none"),
+                      reconstr_when  =c("No", "Fix_Issues", "Yes"),
+                      reconstr_method=c("AFS", "SSS", "Poisson",
+                                        "Ball_Pivoting", "Alpha_Wrap",
+                                        "none"),
                       ...) {
+    remesh_method <- match.arg(tolower(remesh_method),
+                               choices=c("isotropic", "none"))
+    
     reconstr_when <- match.arg(tolower(reconstr_when),
                                choices=c("no", "fix_issues", "yes"))
 
@@ -224,7 +301,8 @@ read_mesh <- function(x, name,
         setNames(x, obs_names),
         mesh_names,
         fix_issues     =fix_issues,
-        iso_remesh     =iso_remesh,
+        remesh         =remesh,
+        remesh_method  =remesh_method,
         reconstr_when  =reconstr_when,
         reconstr_method=reconstr_method,
         list(dotsL))

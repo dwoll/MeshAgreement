@@ -155,6 +155,7 @@ shiny::shinyApp(
                             sss_borderAngle        <- NULL
                             #
                             pois_normals           <- NULL
+                            pois_normals_method    <- NULL
                             pois_spacing           <- NULL
                             pois_sm_angle          <- NULL
                             pois_sm_radius         <- NULL
@@ -165,15 +166,15 @@ shiny::shinyApp(
                             ballp_angle            <- NULL
                             ballp_deleteFaces      <- NULL
                             
-                            ## isotropic remeshing options
-                            if(!is.null(input$read_mesh_iso_remesh) &&
-                               input$read_mesh_iso_remesh) {
-                                isorem_TargetLen       <- input$read_mesh_isorem_targlen
-                                isorem_FeatureAngleDeg <- input$read_mesh_isorem_fang
-                                isorem_MaxSurfDist     <- input$read_mesh_isorem_msurfdst
-                                isorem_iterations      <- input$read_mesh_isorem_iter
-                                isorem_Adaptive        <- input$read_mesh_isorem_adapt
-                                # isorem_relaxSteps      <- input$read_mesh_isorem_relstep
+                            ## remeshing options
+                            if(!is.null(input$read_mesh_remesh) &&
+                               input$read_mesh_remesh) {
+                                isorem_TargetLen       <- input$read_mesh_remesh_iso_targlen
+                                isorem_FeatureAngleDeg <- input$read_mesh_remesh_iso_fang
+                                isorem_MaxSurfDist     <- input$read_mesh_remesh_iso_msurfdst
+                                isorem_iterations      <- input$read_mesh_remesh_iso_iter
+                                isorem_Adaptive        <- input$read_mesh_remesh_iso_adapt
+                                # isorem_relaxSteps      <- input$read_mesh_remesh_iso_relstep
                             }
                             
                             ## some surface reconstruction requested
@@ -192,26 +193,24 @@ shiny::shinyApp(
                                     sss_forceManifold   <- input$read_mesh_reconstr_sss_fmanif
                                     sss_borderAngle     <- input$read_mesh_reconstr_sss_angle
                                 } else if(input$read_mesh_reconstr_method == "Poisson") {
-                                    if(input$read_mesh_reconstr_pois_normethod == "Jet") {
+                                    pois_normals_method <- input$read_mesh_reconstr_pois_normethod
+                                    pois_normals <- if(pois_normals_method %in% c("Jet", "PCA")) {
                                         k <- round(input$read_mesh_reconstr_pois_normals)
                                         stopifnot(k >= 2)
-                                        pois_normals <- paste0("jet(", k, ")")
+                                        k
+                                    } else if(pois_normals_method == "VCG") {
+                                        NULL
                                     } else {
-                                        ## method = pca
-                                        k <- round(input$read_mesh_reconstr_pois_normals)
-                                        stopifnot(k >= 2)
-                                        pois_normals <- paste0("pca(", k, ")")
+                                        stop("Invalid Poisson normals method")
                                     }
                                     
-                                    if(input$read_mesh_reconstr_pois_spmethod == "knn") {
-                                        k <- round(input$read_mesh_reconstr_pois_spacing)
-                                        stopifnot(k >= 2)
-                                        pois_spacing <- paste0("ave(", k, ")")
+                                    pois_spacing <- if(input$read_mesh_reconstr_pois_spmethod == "avg") {
+                                        NULL
                                     } else {
                                         ## method = numeric
                                         val <- input$read_mesh_reconstr_pois_spacing
                                         stopifnot(val > 0)
-                                        pois_spacing <- val
+                                        val
                                     }
                                     
                                     pois_sm_angle    <- input$read_mesh_reconstr_pois_smang
@@ -229,7 +228,8 @@ shiny::shinyApp(
                                          name            =f_names,
                                          fix_issues      =input$read_mesh_fix_issues,
                                          #
-                                         iso_remesh      =input$read_mesh_iso_remesh,
+                                         remesh          =input$read_mesh_remesh,
+                                         remesh_method   =input$read_mesh_remesh_method,
                                          TargetLen       =isorem_TargetLen,
                                          FeatureAngleDeg =isorem_FeatureAngleDeg,
                                          MaxSurfDist     =isorem_MaxSurfDist,
@@ -250,6 +250,7 @@ shiny::shinyApp(
                                          borderAngle     =sss_borderAngle,
                                          #
                                          normals         =pois_normals,
+                                         normals_method  =pois_normals_method,
                                          spacing         =pois_spacing,
                                          sm_angle        =pois_sm_angle,
                                          sm_radius       =pois_sm_radius,
@@ -393,41 +394,54 @@ shiny::shinyApp(
         output$ui_import_fix <- renderUI({
             if(input$meshes_input_source == "file") {
                 tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", value=TRUE),
-                        checkboxInput("read_mesh_iso_remesh", "Isotropic remeshing?", value=FALSE))
+                        checkboxInput("read_mesh_remesh", "Remeshing?", value=FALSE))
             } else {
                 NULL
             }
         })
-        output$ui_iso_remesh_opts <- renderUI({
+        output$ui_remesh_method <- renderUI({
+            if((input$meshes_input_source == "file")      &&
+               !is.null(input$read_mesh_remesh) &&
+               (input$read_mesh_remesh)) {
+                radioButtons("read_mesh_remesh_method",
+                             "Remesh method",
+                             choices=c("Isotropic"="Isotropic"),
+                             selected="Isotropic",
+                             inline=TRUE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_remesh_iso_opts <- renderUI({
             if((input$meshes_input_source == "file") &&
-               !is.null(input$read_mesh_iso_remesh)  &&
-               (input$read_mesh_iso_remesh)) {
-                tagList(numericInput("read_mesh_isorem_targlen",
+               !is.null(input$read_mesh_remesh)  &&
+               (input$read_mesh_remesh)) {
+                tagList(numericInput("read_mesh_remesh_iso_targlen",
                                      "Target edge length (lower -> more expensive)",
                                      min=0.01,
                                      value=1,
                                      step=0.01),
-                        numericInput("read_mesh_isorem_fang",
+                        numericInput("read_mesh_remesh_iso_fang",
                                      "Crease angle (deg)",
                                      min=0L,
                                      value=10L,
                                      step=1L),
-                        numericInput("read_mesh_isorem_msurfdst",
+                        numericInput("read_mesh_remesh_iso_msurfdst",
                                      "Maximum surface distance",
                                      min=0L,
                                      value=1,
                                      step=0.05),
-                        numericInput("read_mesh_isorem_iter",
+                        numericInput("read_mesh_remesh_iso_iter",
                                      "Iterations",
                                      min=1L,
                                      value=1L,
                                      step=1L),
-                        # numericInput("read_mesh_isorem_relstep",
+                        # numericInput("read_mesh_remesh_iso_relstep",
                         #              "Relax steps",
                         #              min=1L,
                         #              value=1L,
                         #              step=1L),
-                        checkboxInput("read_mesh_isorem_adapt",
+                        checkboxInput("read_mesh_remesh_iso_adapt",
                                       "Enable adaptive remeshing?",
                                       value=FALSE)
                         )
@@ -514,47 +528,52 @@ shiny::shinyApp(
                (input$read_mesh_reconstr_method == "Poisson")) {
                 tagList(radioButtons("read_mesh_reconstr_pois_normethod",
                              "Normals method",
-                             choices=c("Jet", "PCA"),
-                             selected="Jet",
+                             choices=c("VCG", "Jet", "PCA"),
+                             selected="VCG",
                              inline=TRUE),
                         radioButtons("read_mesh_reconstr_pois_spmethod",
-                                     "Spacing: k-NN or numeric",
-                                     choices=c("k-Nearest Neighbor -> integer"="knn", "numeric -> positive number"="num"),
-                                     selected="knn",
+                                     "Spacing: Average or numeric",
+                                     choices=c("Average"="avg", "numeric -> positive number"="num"),
+                                     selected="avg",
                                      inline=TRUE))
             } else {
                 NULL
             }
         })
         output$ui_reconstr_pois_opts <- renderUI({
-            if(!is.null(input$meshes_input_source)            &&
-               !is.null(input$read_mesh_reconstr_method)      &&
-               !is.null(input$read_mesh_reconstr_when)        &&
-               (input$meshes_input_source       == "file")    &&
-               (input$read_mesh_reconstr_when   != "No")      &&
-               (input$read_mesh_reconstr_method == "Poisson") &&
+            if(!is.null(input$meshes_input_source)               &&
+               !is.null(input$read_mesh_reconstr_method)         &&
+               !is.null(input$read_mesh_reconstr_when)           &&
+               (input$meshes_input_source       == "file")       &&
+               (input$read_mesh_reconstr_when   != "No")         &&
+               (input$read_mesh_reconstr_method == "Poisson")    &&
+               !is.null(input$read_mesh_reconstr_pois_normethod) &&
                !is.null(input$read_mesh_reconstr_pois_spmethod)) {
-                if(input$read_mesh_reconstr_pois_spmethod == "knn") {
-                    spacing_default <- 12
-                    spacing_min     <- 2
-                    spacing_step    <- 1
+                
+                ui_pois_normals <- if(input$read_mesh_reconstr_pois_normethod == "VCG") {
+                    NULL
+                } else {
+                    numericInput("read_mesh_reconstr_pois_normals",
+                                 "Normals Parameter",
+                                 min=2L,
+                                 value=12L,
+                                 step=1L)
+                }
+                ui_pois_spacing <- if(input$read_mesh_reconstr_pois_spmethod == "avg") {
+                    NULL
                 } else {
                     spacing_min     <- 0.001
                     spacing_default <- 2
                     spacing_step    <- 0.1
+                    numericInput("read_mesh_reconstr_pois_spacing",
+                                 "Spacing Parameter",
+                                 min=spacing_min,
+                                 value=spacing_default,
+                                 step=spacing_step)
                 }
-                ## TODO
                 ## normals
-                tagList(numericInput("read_mesh_reconstr_pois_normals",
-                                     "Normals Parameter",
-                                     min=2L,
-                                     value=12L,
-                                     step=1L),
-                        numericInput("read_mesh_reconstr_pois_spacing",
-                                     "Spacing Parameter",
-                                     min=spacing_min,
-                                     value=spacing_default,
-                                     step=spacing_step),
+                tagList(ui_pois_normals,
+                        ui_pois_spacing,
                         numericInput("read_mesh_reconstr_pois_smang",
                                      "SM Angle",
                                      min=0L,
