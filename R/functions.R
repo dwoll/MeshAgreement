@@ -46,9 +46,9 @@ reconstruct_mesh <- function(x,
     ## arguments for reconstruction methods
     args_recon <- list(afs          =c("jetSmoothing"),
                        sss          =c("scaleIterations", "neighbors", "samples", "separateShells", "forceManifold", "borderAngle"),
-                       poisson      =c("normals", "normals_method", "spacing", "sm_angle", "sm_radius", "sm_distance"),
+                       poisson      =c("normals", "normalsMethod", "spacing", "smAngle", "smRadius", "smDistance"),
                        ball_pivoting=c("radius", "clustering", "angle", "deleteFaces"),
-                       alpha_wrap   =c("alpha_rel", "offset_rel"))
+                       alpha_wrap   =c("alphaRel", "offsetRel"))
 
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
@@ -62,16 +62,16 @@ reconstruct_mesh <- function(x,
         mesh_rgl <- do.call(reconstructSSS, argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "poisson") {
-        normals_method <- dotsL_sub[["normals_method"]]
-        if(!is.null(normals_method)) {
-            pnm     <- tolower(normals_method)
+        normalsMethod <- dotsL_sub[["normalsMethod"]]
+        if(!is.null(normalsMethod)) {
+            pnm     <- tolower(normalsMethod)
             normals <- dotsL_sub[["normals"]]
             if(!is.null(normals) &&
                (pnm %in% c("jet", "pca"))) {
                 dotsL_sub[["normals"]] <- getSomeNormals(normals, method=pnm)
             }
 
-            dotsL_sub[["normals_method"]] <- NULL
+            dotsL_sub[["normalsMethod"]] <- NULL
         }
 
         argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
@@ -83,8 +83,7 @@ reconstruct_mesh <- function(x,
         mesh_rgl <- do.call("vcgBallPivoting", argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "alpha_wrap") {
-        x_rgl    <- toRGL(x)
-        argL     <- c(list(x=x_rgl), dotsL_sub)
+        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call("alphaWrap", argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "none") {
@@ -114,7 +113,15 @@ read_mesh_one <- function(x,
                                            "none"))
 
     ## collect arguments intended to be passed to other functions
-    dotsL <- list(...)
+    dotsL0 <- list(...)
+    
+    ## dotsL0 may have 1 extra hierarchy level -> strip
+    dotsL <- if(is.null(names(dotsL0)) && (length(dotsL0) == 1L)) {
+        unlist(dotsL0, recursive=FALSE)
+    } else {
+        dotsL0
+    }
+    
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
@@ -281,7 +288,9 @@ read_mesh <- function(x,
                                choices=c("no", "fix_issues", "yes"))
 
     reconstr_method <- match.arg(tolower(reconstr_method),
-                                 choices=c("afs", "sss", "poisson", "ball_pivoting"))
+                                 choices=c("afs", "sss", "poisson",
+                                           "ball_pivoting", "alpha_wrap",
+                                           "none"))
 
     dotsL <- list(...)
 

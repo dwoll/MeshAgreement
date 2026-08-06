@@ -39,7 +39,8 @@ fluidPage(
                                  uiOutput("ui_reconstr_sss_opts"),
                                  uiOutput("ui_reconstr_pois_method"),
                                  uiOutput("ui_reconstr_pois_opts"),
-                                 uiOutput("ui_reconstr_ballpivot_opts")))
+                                 uiOutput("ui_reconstr_ballpivot_opts"),
+                                 uiOutput("ui_reconstr_alwrap_opts")))
             )
         )
     ),

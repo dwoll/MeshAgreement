@@ -155,16 +155,19 @@ shiny::shinyApp(
                             sss_borderAngle        <- NULL
                             #
                             pois_normals           <- NULL
-                            pois_normals_method    <- NULL
+                            pois_normalsMethod     <- NULL
                             pois_spacing           <- NULL
-                            pois_sm_angle          <- NULL
-                            pois_sm_radius         <- NULL
-                            pois_sm_distance       <- NULL
+                            pois_smAngle           <- NULL
+                            pois_smRadius          <- NULL
+                            pois_smDistance        <- NULL
                             #
                             ballp_radius           <- NULL
                             ballp_clustering       <- NULL
                             ballp_angle            <- NULL
                             ballp_deleteFaces      <- NULL
+                            #
+                            alwrap_alphaRel        <- NULL
+                            alwrap_offsetRel       <- NULL
                             
                             ## remeshing options
                             if(!is.null(input$read_mesh_remesh) &&
@@ -193,12 +196,12 @@ shiny::shinyApp(
                                     sss_forceManifold   <- input$read_mesh_reconstr_sss_fmanif
                                     sss_borderAngle     <- input$read_mesh_reconstr_sss_angle
                                 } else if(input$read_mesh_reconstr_method == "Poisson") {
-                                    pois_normals_method <- input$read_mesh_reconstr_pois_normethod
-                                    pois_normals <- if(pois_normals_method %in% c("Jet", "PCA")) {
+                                    pois_normalsMethod <- input$read_mesh_reconstr_pois_normethod
+                                    pois_normals <- if(pois_normalsMethod %in% c("Jet", "PCA")) {
                                         k <- round(input$read_mesh_reconstr_pois_normals)
                                         stopifnot(k >= 2)
                                         k
-                                    } else if(pois_normals_method == "VCG") {
+                                    } else if(pois_normalsMethod == "VCG") {
                                         NULL
                                     } else {
                                         stop("Invalid Poisson normals method")
@@ -213,14 +216,17 @@ shiny::shinyApp(
                                         val
                                     }
                                     
-                                    pois_sm_angle    <- input$read_mesh_reconstr_pois_smang
-                                    pois_sm_radius   <- input$read_mesh_reconstr_pois_smrad
-                                    pois_sm_distance <- input$read_mesh_reconstr_pois_smdst
+                                    pois_smAngle     <- input$read_mesh_reconstr_pois_smang
+                                    pois_smRadius    <- input$read_mesh_reconstr_pois_smrad
+                                    pois_smDistance  <- input$read_mesh_reconstr_pois_smdst
                                 } else if(input$read_mesh_reconstr_method == "Ball_Pivot") {
                                     ballp_radius      <- input$read_mesh_reconstr_ballpivot_radius
                                     ballp_clustering  <- input$read_mesh_reconstr_ballpivot_clust
                                     ballp_angle       <- input$read_mesh_reconstr_ballpivot_angle
                                     ballp_deleteFaces <- input$read_mesh_reconstr_ballpviot_delface
+                                } else if(input$read_mesh_reconstr_method == "Alpha_Wrap") {
+                                    alwrap_alphaRel   <- input$read_mesh_reconstr_alwrap_alphaRel
+                                    alwrap_offsetRel  <- input$read_mesh_reconstr_alwrap_offsetRel
                                 }
                             }
                             
@@ -250,16 +256,19 @@ shiny::shinyApp(
                                          borderAngle     =sss_borderAngle,
                                          #
                                          normals         =pois_normals,
-                                         normals_method  =pois_normals_method,
+                                         normalsMethod   =pois_normalsMethod,
                                          spacing         =pois_spacing,
-                                         sm_angle        =pois_sm_angle,
-                                         sm_radius       =pois_sm_radius,
-                                         sm_distance     =pois_sm_distance,
+                                         smAngle         =pois_smAngle,
+                                         smRadius        =pois_smRadius,
+                                         smDistance      =pois_smDistance,
                                          #
                                          radius          =ballp_radius,
                                          clustering      =ballp_clustering,
                                          angle           =ballp_angle,
-                                         deleteFaces     =ballp_deleteFaces)
+                                         deleteFaces     =ballp_deleteFaces,
+                                         #
+                                         alphaRel        =alwrap_alphaRel,
+                                         offsetRel       =alwrap_offsetRel)
                             
                             do.call("read_mesh_obs", Filter(Negate(is.null), argL))
                         } else {
@@ -470,7 +479,8 @@ shiny::shinyApp(
                              "Surface reconstruction method",
                              choices=c("AFS"="AFS", "SSS"="SSS", 
                                        "Poisson"="Poisson",
-                                       "Ball Pivoting"="Ball_Pivot"),
+                                       "Ball Pivoting"="Ball_Pivot",
+                                       "Alpha Wrap"="Alpha_Wrap"),
                              selected="AFS",
                              inline=TRUE)
             } else {
@@ -616,6 +626,27 @@ shiny::shinyApp(
                         checkboxInput("read_mesh_reconstr_ballpviot_delface",
                                      "Delete Faces?",
                                      value=FALSE))
+            } else {
+                NULL
+            }
+        })
+        output$ui_reconstr_alwrap_opts <- renderUI({
+            if(!is.null(input$meshes_input_source)         &&
+               !is.null(input$read_mesh_reconstr_method)   &&
+               !is.null(input$read_mesh_reconstr_when)     &&
+               (input$meshes_input_source       == "file") &&
+               (input$read_mesh_reconstr_when   != "No")   &&
+               (input$read_mesh_reconstr_method == "Alpha_Wrap")) {
+                tagList(numericInput("read_mesh_reconstr_alwrap_alphaRel",
+                                     "Alpha (relative to bounding box)",
+                                     min=0.01,
+                                     value=5,
+                                     step=1),
+                        numericInput("read_mesh_reconstr_alwrap_offsetRel",
+                                     "Offset (relative to bounding box)",
+                                     min=0.01,
+                                     value=5,
+                                     step=1))
             } else {
                 NULL
             }
