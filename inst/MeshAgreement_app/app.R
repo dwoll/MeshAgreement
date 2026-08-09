@@ -111,9 +111,9 @@ shiny::shinyApp(
                 }
                 
                 meshL <- if(input$meshes_input_source == "builtin") {
-                    if(exists("cgalMesh_heart_obsL") && !is.null(cgalMesh_heart_obsL)) {
+                    if(exists("CGALmesh_heart_obsL") && !is.null(CGALmesh_heart_obsL)) {
                         ## use builtin data
-                        ll <- cgalMesh_heart_obsL
+                        ll <- CGALmesh_heart_obsL
                         if(input$meshes_sel_mode == "indiv") {
                             ll[seq_len(min(c(length(ll), n_observers)))]
                         } else {

@@ -11,7 +11,7 @@ library(shiny)
 src_dir <- system.file("extdata", package="MeshAgreement") # "www"
 f_name  <- paste0(src_dir, "/mesh3d_heart_obsL.rda")
 
-cgalMesh_heart_obsL <- if(file.exists(f_name)) {
+CGALmesh_heart_obsL <- if(file.exists(f_name)) {
     mesh3d_heart_obsL <- readRDS(paste0(f_name))
     mesh3dL_to_CGALmeshL(mesh3d_heart_obsL)
 } else {
