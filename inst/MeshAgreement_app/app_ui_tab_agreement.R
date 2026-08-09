@@ -26,7 +26,7 @@ fluidPage(
                 collapsible=TRUE,
                 collapsed=TRUE,
                 p("For the definition of the following options, see the",
-                  tags$a(href="https://rdrr.io/cran/Rvcg/man/vcgMetro.html",
+                  tags$a(href="https://cran.r-project.org/web/packages/Rvcg/refman/Rvcg.html#vcgMetrol",
                          "documentation of the Rvcg::vcgMetro() function"),
                   "as well the",
                   tags$a(href="http://vcglib.net/metro.html",
