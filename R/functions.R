@@ -158,7 +158,7 @@ read_mesh_one <- function(x,
             warn_str <- paste0(warn_str, ". Trying to fix.")
             warning(warn_str)
             if(!diag_nsi) {
-                mesh_r1a <- removeSelfIntersections(mesh_r1)
+                mesh_r1a <- removeSelfIntersections(mesh_r1, method="auto_snap")
             }
 
             if(!diag_bv) {
@@ -370,11 +370,11 @@ get_mesh_ui_pair <- function(x) {
         vol_i       <- NA_real_
     } else {
         if(doesSelfIntersect(m_union)) {
-            m_union <- removeSelfIntersections(m_union)
+            m_union <- removeSelfIntersections(m_union, method="auto_snap")
         }
 
         if(doesSelfIntersect(m_intersect)) {
-            m_intersect <- removeSelfIntersections(m_intersect)
+            m_intersect <- removeSelfIntersections(m_intersect, method="auto_snap")
         }
 
         vol_u_0 <- try(getVolume(m_union))
