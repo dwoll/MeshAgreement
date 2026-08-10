@@ -10,7 +10,7 @@
 }
 \details{Thin front-end for \code{\link[Rvcg]{vcgMetro}}. Use \code{\link[MeshAgreement]{get_mesh_metro}} to process all pairs from a list of 3D meshes. Post-processing for agreement measures is done in \code{\link[MeshAgreement]{get_mesh_agree_pair}}.}
 \value{\code{list} with object returned by \code{\link[Rvcg]{vcgMetro}} together with the name of the comparison and a name for the structure.}
-\references{\url{http://vcg.isti.cnr.it/vcglib/}}
+\references{\url{http://vcglib.net/}}
 \seealso{
 \code{\link[MeshAgreement]{get_mesh_pairs}},
 \code{\link[MeshAgreement]{get_mesh_metro}},
@@ -18,7 +18,7 @@
 \code{\link[Rvcg]{vcgMetro}}
 }
 \examples{
-heartL <- mesh3dL_to_cgalMeshL(data_heart_obsL)
+heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 pairL  <- get_mesh_pairs(heartL)
 metro  <- get_mesh_metro_pair(pairL[[1]], nSamples=500L, silent=TRUE)
 # Hausdorff distance

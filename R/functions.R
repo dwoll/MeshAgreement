@@ -33,6 +33,26 @@ remesh_mesh <- function(x, method=c("No", "Isotropic"), ...) {
     }
 }
 
+smooth_mesh <- function(x, method=c("No", "VCG"), ...) {
+    method <- match.arg(tolower(method),
+                        choices=c("no", "vcg"))
+    
+    ## arguments for smoothing methods
+    args_remesh <- list(vcg=c("type", "iteration", "lambda", "mu", "delta"))
+    
+    dotsL     <- list(...)
+    dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
+    
+    if(method == "vcg") {
+        x_rgl      <- toRGL(x)
+        argL       <- c(list(mesh=x_rgl), dotsL_sub)
+        mesh_rgl_r <- do.call(vcgSmooth, argL)
+        makeMesh(mesh=mesh_rgl_r) # TODO shortcut version
+    } else if(method == "no") {
+        x
+    }
+}
+
 reconstruct_mesh <- function(x,
                              method=c("No", "AFS", "SSS", "Poisson",
                                       "Ball_Pivoting", "Alpha_Wrap"),
@@ -92,12 +112,16 @@ reconstruct_mesh <- function(x,
 read_mesh_one <- function(x,
                           name,
                           fix_issues =TRUE,
-                          remesh     =c("No", "Isotropic"),
                           reconstruct=c("No", "AFS", "SSS", "Poisson",
                                         "Ball_Pivoting", "Alpha_Wrap"),
+                          smooth     =c("No", "VCG"),
+                          remesh     =c("No", "Isotropic"),
                           ...) {
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
+    
+    smooth <- match.arg(tolower(smooth),
+                        choices=c("no", "vcg"))
     
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson",
@@ -120,28 +144,39 @@ read_mesh_one <- function(x,
     }
 
     mesh_raw <- readMeshFile(x)
-    mesh_in  <- makeMesh(mesh_raw[["vertices"]], mesh_raw[["faces"]])
+    mesh_in  <- makeMesh(mesh_raw[["vertices"]],
+                         mesh_raw[["faces"]],
+                         triangulate=TRUE,
+                         clean      =fix_issues)
 
-    ## re-mesh?
-    mesh_r0 <- if(remesh != "no") {
-        argL <- c(list(x=mesh_in, method=remesh), dotsL)
-        do.call(remesh_mesh, argL)
+    ## reconstruct?
+    mesh_r0 <- if(reconstruct != "no") {
+        argL <- c(list(x=mesh_in, method=reconstruct), dotsL)
+        do.call(reconstruct_mesh, argL)
     } else {
         mesh_in
     }
 
-    ## reconstruct in any case?
-    mesh_r1 <- if(reconstruct != "no") {
-        argL <- c(list(x=mesh_r0, method=reconstruct), dotsL)
-        do.call(reconstruct_mesh, argL)
+    ## smooth?
+    mesh_r1 <- if(smooth != "no") {
+        argL <- c(list(x=mesh_r0, method=smooth), dotsL)
+        do.call(smooth_mesh, argL)
     } else {
         mesh_r0
     }
-
+    
+    ## re-mesh?
+    mesh_r2 <- if(remesh != "no") {
+        argL <- c(list(x=mesh_r1, method=remesh), dotsL)
+        do.call(remesh_mesh, argL)
+    } else {
+        mesh_r1
+    }
+    
     ## check mesh
-    diag_nsi <- !doesSelfIntersect(mesh_r1)
+    diag_nsi <- !doesSelfIntersect(mesh_r2)
     diag_bv  <- if(diag_nsi) {
-        doesBoundVolume(mesh_r1)
+        doesBoundVolume(mesh_r2)
     } else {
         FALSE
     }
@@ -149,7 +184,7 @@ read_mesh_one <- function(x,
     issues <- c("self intersects", "does not bound volume")
 
     ## any issue?
-    mesh_r2 <- if(!all(diag_nsi, diag_bv)) {
+    mesh_r3 <- if(!all(diag_nsi, diag_bv)) {
         warn_str <- paste0("Mesh ", mesh_name, " has these issues: ",
                            paste(issues[!c(diag_nsi, diag_bv)],
                                  collapse=", "))
@@ -158,30 +193,30 @@ read_mesh_one <- function(x,
             warn_str <- paste0(warn_str, ". Trying to fix.")
             warning(warn_str)
             if(!diag_nsi) {
-                mesh_r1a <- removeSelfIntersections(mesh_r1, method="auto_snap")
+                mesh_r2a <- removeSelfIntersections(mesh_r2, method="auto_snap")
             }
 
             if(!diag_bv) {
-                mesh_r1a <- orientToBoundVolume(mesh_r1a)
+                mesh_r2a <- orientToBoundVolume(mesh_r2a)
             }
             
-            mesh_r1a
+            mesh_r2a
         } else {
             warning(warn_str)
-            mesh_r1
+            mesh_r2
         }
     } else {
         ## no issue
-        mesh_r1
+        mesh_r2
     }
 
-    vol_0 <- try(getVolume(mesh_r2))
-    ctr_0 <- try(getCentroid(mesh_r2))
+    vol_0 <- try(getVolume(mesh_r3))
+    ctr_0 <- try(getCentroid(mesh_r3))
 
     vol <- if(!inherits(vol_0, "try-error")) {
         if(vol_0 <= 0) {
-            mesh_r2 <- orientToBoundVolume(mesh_r2)
-            vol_0   <- volume(mesh_r2)
+            mesh_r3 <- orientToBoundVolume(mesh_r3)
+            vol_0   <- volume(mesh_r3)
         }
 
         vol_0
@@ -196,7 +231,7 @@ read_mesh_one <- function(x,
     }
 
     list(name    =mesh_name,
-         mesh    =mesh_r2,
+         mesh    =mesh_r3,
          volume  =vol,
          centroid=ctr)
 }
@@ -204,17 +239,21 @@ read_mesh_one <- function(x,
 read_mesh_obs <- function(x,
                           name,
                           fix_issues =TRUE,
-                          remesh     =c("No", "Isotropic"),
                           reconstruct=c("No", "AFS", "SSS", "Poisson",
                                         "Ball_Pivoting", "Alpha_Wrap"),
+                          smooth     =c("No", "VCG"),
+                          remesh     =c("No", "Isotropic"),
                           ...) {
-    remesh <- match.arg(tolower(remesh),
-                        choices=c("no", "isotropic"))
-    
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson",
                                        "ball_pivoting", "alpha_wrap"))
 
+    smooth <- match.arg(tolower(smooth),
+                        choices=c("no", "vcg"))
+    
+    remesh <- match.arg(tolower(remesh),
+                        choices=c("no", "isotropic"))
+    
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
@@ -225,8 +264,9 @@ read_mesh_obs <- function(x,
         read_mesh_one(x[i],
                       name       =mesh_names[i],
                       fix_issues =fix_issues,
-                      remesh     =remesh,
                       reconstruct=reconstruct,
+                      smooth     =smooth,
+                      remesh     =remesh,
                       ...)
     })
 
@@ -236,17 +276,21 @@ read_mesh_obs <- function(x,
 read_mesh <- function(x,
                       name,
                       fix_issues =TRUE,
-                      remesh     =c("No", "Isotropic"),
                       reconstruct=c("No", "AFS", "SSS", "Poisson",
                                     "Ball_Pivoting", "Alpha_Wrap"),
+                      smooth     =c("No", "VCG"),
+                      remesh     =c("No", "Isotropic"),
                       ...) {
-    remesh <- match.arg(tolower(remesh),
-                        choices=c("no", "isotropic"))
-    
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson",
                                        "ball_pivoting", "alpha_wrap"))
 
+    smooth <- match.arg(tolower(smooth),
+                        choices=c("no", "vcg"))
+    
+    remesh <- match.arg(tolower(remesh),
+                        choices=c("no", "isotropic"))
+    
     dotsL <- list(...)
 
     obs_names <- if(missing(name)) {
@@ -265,8 +309,9 @@ read_mesh <- function(x,
         setNames(x, obs_names),
         mesh_names,
         fix_issues =fix_issues,
-        remesh     =remesh,
         reconstruct=reconstruct,
+        smooth     =smooth,
+        remesh     =remesh,
         list(dotsL))
     }
 

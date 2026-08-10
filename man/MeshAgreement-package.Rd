@@ -12,7 +12,7 @@ coefficient as documented in Stockinger et al. (2021)
 <doi:10.1186/s13014-021-01965-5>. Overall agreement for
 a set of meshes is calculated as the aggregate agreement
 for all pairwise comparisons. Based on algorithms
-provided by the 'VCGLIB' <http://vcg.isti.cnr.it/vcglib/>
+provided by the 'VCGLIB' <http://vcglib.net/>
 and 'CGAL' <https://www.cgal.org/> libraries.
 Includes web-based graphical user interface.
 }
@@ -41,11 +41,11 @@ Sherer et al. Metrics to evaluate the performance of auto-segmentation for radia
 
 \url{https://www.cgal.org/}
 
-\url{http://vcg.isti.cnr.it/vcglib/}
+\url{http://vcglib.net/}
 }
 \keyword{package}
 \examples{
-heartL <- mesh3dL_to_cgalMeshL(data_heart_obsL)
+heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 pairL  <- get_mesh_pairs(heartL)
 get_mesh_agree_pair(pairL[[1]], do_ui=FALSE)
 }

@@ -18,7 +18,7 @@ Description: Calculates distance-based and volume-overlap-based
         <doi:10.1186/s13014-021-01965-5>. Overall agreement for
         a set of meshes is calculated as the aggregate agreement
         for all pairwise comparisons. Based on algorithms
-        provided by the 'VCGLIB' <http://vcg.isti.cnr.it/vcglib/>
+        provided by the 'VCGLIB' <http://vcglib.net/>
         and 'CGAL' <https://www.cgal.org/> libraries.
         Includes web-based graphical user interface.
 License: GPL (>= 2)

@@ -8,7 +8,7 @@ get_mesh_info_one(x)
 \arguments{
   \item{x}{A single mesh object as produced by \code{\link[MeshAgreement]{read_mesh_one}}.}
 }
-\details{Use \code{\link[MeshAgreement]{get_mesh_info}} for getting the information about a list of mesh observer/objects. Use \code{\link[MeshAgreement]{get_mesh_info_obs}} for getting the information about a list of meshes.}
+\details{Use \code{\link[MeshAgreement]{get_mesh_info}} for getting the information about a list of mesh observer / objects. Use \code{\link[MeshAgreement]{get_mesh_info_obs}} for getting the information about a list of meshes.}
 \value{
 \code{data.frame} with these variables
 \item{name}{Name of the mesh.}
@@ -25,6 +25,6 @@ get_mesh_info_one(x)
 \code{\link[MeshAgreement]{get_mesh_info}}
 }
 \examples{
-heartL <- mesh3dL_to_cgalMeshL(data_heart_obsL)
+heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 get_mesh_info_one(heartL[["Obs01"]][["Obs01_HEART"]])
 }

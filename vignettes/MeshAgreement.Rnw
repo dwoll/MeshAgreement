@@ -9,7 +9,6 @@ DIV15]{scrartcl}
 
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[final,babel,activate=TRUE]{microtype}
 \usepackage{lmodern}
 \usepackage{upquote}
 \usepackage{url}
@@ -83,7 +82,7 @@ options(replace.assign=TRUE,
 %%%%---------------------------------------------------------------------------
 %%%%---------------------------------------------------------------------------
 
-\texttt{MeshAgreement} is an add-on package for the free statistical environment \textsf{R}\footnote{A free short introduction to \textsf{R} can be found at \url{https://www.statmethods.net/}.} \cite{RDevelopmentCoreTeam2008c}. It provides functionality to read 3D mesh files, to calculate distance-based as well as volume-overlap-based agreement measures for 3D structures, and to plot the meshes.
+\texttt{MeshAgreement} is an add-on package for the free statistical environment \textsf{R} \cite{RDevelopmentCoreTeam2008c}. It provides functionality to read 3D mesh files, to calculate distance-based as well as volume-overlap-based agreement measures for 3D structures, and to plot the meshes.
 
 The application motivating development of \texttt{MeshAgreement} is to compare delineated structures for radiotherapy treatment planning. In order to export 3D mesh files in PLY format from Varian Eclipse, you can use an ESAPI script included in the package. The path to the script can be found like this - re-run in current R session to find the correct path on a given system:
 

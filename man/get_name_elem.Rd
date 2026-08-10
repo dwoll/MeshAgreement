@@ -1,7 +1,7 @@
 \name{get_name_elem}
 \alias{get_name_elem}
 \title{Return element of a comparison string}
-\description{Utility function to return the first or second element of a comparison string used to indicate which two meshes are being compared.}
+\description{Utility function to return the first or the second element of a comparison string used to indicate which two meshes are being compared.}
 \usage{
 get_name_elem(x, pos=1L, sep=" <-> ")
 }
