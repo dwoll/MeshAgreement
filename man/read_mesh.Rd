@@ -11,15 +11,16 @@
 \arguments{
   \item{x}{\code{list} of \code{character} vectors of file names. One vector for the files from one observer.}
   \item{name}{\code{list} of \code{character} vectors of mesh names that should be assigned to the mesh objects. If missing, names are taken from the file names.}
-  \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections.}
+  \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections, see \code{\link[CGALmeshops]{readMeshFile}}.}
   \item{reconstruct}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[CGALmeshops]{reconstructAFS}}. \code{"SSS"} uses \code{\link[CGALmeshops]{reconstructSSS}}. \code{"Poisson"} uses \code{\link[CGALmeshops]{reconstructPoisson}}. \code{"Ball_Pivoting"} uses \code{\link[Rvcg]{vcgBallPivoting}}. \code{"Alpha_Wrap"} uses \code{\link[CGALmeshops]{alphaWrap}}.}
   \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}.}
-  \item{remesh}{\code{character}. Isotropic remeshing using the \code{\link[Rvcg]{vcgIsotropicRemeshing}} function from package \code{Rvcg}.}
-  \item{...}{Options passed to \code{\link[CGALmeshops]{reconstructAFS}}, \code{\link[CGALmeshops]{reconstructSSS}}, \code{\link[CGALmeshops]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[CGALmeshops]{alphaWrap}}, or \code{\link[Rvcg]{vcgSmooth}}.}
+  \item{remesh}{\code{character}. \code{"Isotropic"} uses \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
+  \item{...}{Options passed to \code{\link[CGALmeshops]{reconstructAFS}}, \code{\link[CGALmeshops]{reconstructSSS}}, \code{\link[CGALmeshops]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[CGALmeshops]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF. For subsequent comparison, the first file from observer 1 will be paired with the first file from observer 2, and so on.}
 \value{\code{list} (each component representing one observer) of \code{list}s of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[CGALmeshops]{CGALmesh}} object. Sample object given in \code{\link[MeshAgreement]{data_heart_obsL}}. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read several mesh files from one observer. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
 \seealso{
+\code{\link[CGALmeshops]{readMeshFile}},
 \code{\link[CGALmeshops]{reconstructAFS}},
 \code{\link[CGALmeshops]{reconstructSSS}},
 \code{\link[CGALmeshops]{reconstructPoisson}},

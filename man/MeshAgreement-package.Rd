@@ -47,5 +47,5 @@ Sherer et al. Metrics to evaluate the performance of auto-segmentation for radia
 \examples{
 heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 pairL  <- get_mesh_pairs(heartL)
-get_mesh_agree_pair(pairL[[1]], do_ui=FALSE)
+get_mesh_agree_pair(pairL[[1]], do_ui=FALSE, silent=TRUE)
 }

@@ -11,15 +11,16 @@
 \arguments{
   \item{x}{\code{character}. File name.}
   \item{name}{\code{character}. Name that should be assigned to the mesh object. If missing, the name is taken from the file name.}
-  \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections. Uses surface reconstruction if mesh is not closed.}
+  \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections, see \code{\link[CGALmeshops]{readMeshFile}}.}
   \item{reconstruct}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[CGALmeshops]{reconstructAFS}}. \code{"SSS"} uses \code{\link[CGALmeshops]{reconstructSSS}}. \code{"Poisson"} uses \code{\link[CGALmeshops]{reconstructPoisson}}. \code{"Ball_Pivoting"} uses \code{\link[Rvcg]{vcgBallPivoting}}. \code{"Alpha_Wrap"} uses \code{\link[CGALmeshops]{alphaWrap}}.}
   \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}.}
-  \item{remesh}{\code{character}. Isotropic remeshing using the \code{\link[Rvcg]{vcgIsotropicRemeshing}} function from package \code{Rvcg}.}
-  \item{...}{Options passed to \code{\link[CGALmeshops]{reconstructAFS}}, \code{\link[CGALmeshops]{reconstructSSS}}, \code{\link[CGALmeshops]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[CGALmeshops]{alphaWrap}}, or \code{\link[Rvcg]{vcgSmooth}}.}
+  \item{remesh}{\code{character}. \code{"Isotropic"} uses \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
+  \item{...}{Options passed to \code{\link[CGALmeshops]{reconstructAFS}}, \code{\link[CGALmeshops]{reconstructSSS}}, \code{\link[CGALmeshops]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[CGALmeshops]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF.}
 \value{Mesh object - a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[CGALmeshops]{CGALmesh}} object. Use \code{\link[MeshAgreement]{read_mesh}} to read a list of several mesh objects each for several observers. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read a list of several mesh objects each for 1 observer.}
 \seealso{
+\code{\link[CGALmeshops]{readMeshFile}},
 \code{\link[CGALmeshops]{reconstructAFS}},
 \code{\link[CGALmeshops]{reconstructSSS}},
 \code{\link[CGALmeshops]{reconstructPoisson}},
@@ -35,7 +36,7 @@ if(interactive()) {
     src_dir <- system.file("extdata", package="MeshAgreement")
     ff      <- list.files(src_dir, pattern="^Obs01", full.names=TRUE)
     mesh    <- read_mesh_one(ff[1], reconstruct="AFS")
-                             
+
     get_mesh_info_one(mesh)
 }
 }

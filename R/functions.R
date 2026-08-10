@@ -216,7 +216,7 @@ read_mesh_one <- function(x,
     vol <- if(!inherits(vol_0, "try-error")) {
         if(vol_0 <= 0) {
             mesh_r3 <- orientToBoundVolume(mesh_r3)
-            vol_0   <- volume(mesh_r3)
+            vol_0   <- getVolume(mesh_r3)
         }
 
         vol_0
