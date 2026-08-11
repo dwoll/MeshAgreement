@@ -11,20 +11,20 @@
 \arguments{
   \item{x}{\code{character} vector of file names.}
   \item{name}{\code{character} vector of names that should be assigned to the mesh objects. If missing, names are taken from the file names.}
-  \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections, see \code{\link[CGALmeshops]{readMeshFile}}.}
-  \item{reconstruct}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[CGALmeshops]{reconstructAFS}}. \code{"SSS"} uses \code{\link[CGALmeshops]{reconstructSSS}}. \code{"Poisson"} uses \code{\link[CGALmeshops]{reconstructPoisson}}. \code{"Ball_Pivoting"} uses \code{\link[Rvcg]{vcgBallPivoting}}. \code{"Alpha_Wrap"} uses \code{\link[CGALmeshops]{alphaWrap}}.}
+  \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections, see \code{\link[MeshUtils]{readMeshFile}}.}
+  \item{reconstruct}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[MeshUtils]{reconstructAFS}}. \code{"SSS"} uses \code{\link[MeshUtils]{reconstructSSS}}. \code{"Poisson"} uses \code{\link[MeshUtils]{reconstructPoisson}}. \code{"Ball_Pivoting"} uses \code{\link[Rvcg]{vcgBallPivoting}}. \code{"Alpha_Wrap"} uses \code{\link[MeshUtils]{alphaWrap}}.}
   \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}.}
   \item{remesh}{\code{character}. \code{"Isotropic"} uses \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
-  \item{...}{Options passed to \code{\link[CGALmeshops]{reconstructAFS}}, \code{\link[CGALmeshops]{reconstructSSS}}, \code{\link[CGALmeshops]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[CGALmeshops]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
+  \item{...}{Options passed to \code{\link[MeshUtils]{reconstructAFS}}, \code{\link[MeshUtils]{reconstructSSS}}, \code{\link[MeshUtils]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[MeshUtils]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF.}
-\value{List of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[CGALmeshops]{CGALmesh}} object. Use \code{\link[MeshAgreement]{read_mesh}} to read a list of several mesh objects each for several observers. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
+\value{List of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[MeshUtils]{CGALmesh}} object. Use \code{\link[MeshAgreement]{read_mesh}} to read a list of several mesh objects each for several observers. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
 \seealso{
-\code{\link[CGALmeshops]{readMeshFile}},
-\code{\link[CGALmeshops]{reconstructAFS}},
-\code{\link[CGALmeshops]{reconstructSSS}},
-\code{\link[CGALmeshops]{reconstructPoisson}},
-\code{\link[CGALmeshops]{alphaWrap}},
+\code{\link[MeshUtils]{readMeshFile}},
+\code{\link[MeshUtils]{reconstructAFS}},
+\code{\link[MeshUtils]{reconstructSSS}},
+\code{\link[MeshUtils]{reconstructPoisson}},
+\code{\link[MeshUtils]{alphaWrap}},
 \code{\link[Rvcg]{vcgBallPivoting}},
 \code{\link[Rvcg]{vcgIsotropicRemeshing}},
 \code{\link[Rvcg]{vcgSmooth}},

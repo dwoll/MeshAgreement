@@ -1,7 +1,7 @@
 \name{mesh3dL_to_CGALmeshL}
 \alias{mesh3dL_to_CGALmeshL}
 \title{Turns an observer / mesh list of mesh3d objects into an observer / mesh list of CGALmesh objects}
-\description{Utility function that turns an observer / mesh list of mesh3d objects (from package rgl) into an observer / mesh list of CGALmesh objects (from package CGALmeshops).}
+\description{Utility function that turns an observer / mesh list of mesh3d objects (from package rgl) into an observer / mesh list of CGALmesh objects (from package MeshUtils).}
 \usage{
 mesh3dL_to_CGALmeshL(x)
 }

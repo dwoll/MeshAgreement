@@ -91,7 +91,7 @@ esapi_location <- system.file("extdata", package="MeshAgreement")
 list.files(esapi_location, full.names=TRUE)
 @
 
-Computational geometry is carried out mainly using the \texttt{CGAL} library \cite{CGAL2022} via package \texttt{RcppCGAL} \cite{Dunipace2022} used in package \texttt{CGALmeshops} \cite{Wollschlager2026}. Distance maps, isotropic remeshing, and mesh smoothing are based on the \texttt{VCG} library \cite{VCG2022} via package \texttt{Rvcg} \cite{Schlager2017}.
+Computational geometry is carried out mainly using the \texttt{CGAL} library \cite{CGAL2022} via package \texttt{RcppCGAL} \cite{Dunipace2022} used in package \texttt{MeshUtils} \cite{Wollschlager2026}. Distance maps, isotropic remeshing, and mesh smoothing are based on the \texttt{VCG} library \cite{VCG2022} via package \texttt{Rvcg} \cite{Schlager2017}.
 
 To install \texttt{MeshAgreement}, you need a current version of \textsf{R} and be online. Preferably, a free development environment like \textsf{R}Studio \cite{RStudio2022} should be used.
 
