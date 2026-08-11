@@ -1,6 +1,6 @@
 # MeshAgreement
 
-Agreement measures for 3D structures saved as mesh files. R package containing an interactive [R](https://www.r-project.org/) [Shiny](https://shiny.rstudio.com/) app. You can upload mesh files (STL, PLY, OBJ, OFF) to generate agreement measures for all pairwise comparisons, as well as the corresponding aggregated agreement. The intended application is to compare delineated structures for radiotherapy treatment planning.
+Agreement measures for 3D structures saved as mesh files. R package containing an interactive [R](https://www.r-project.org/) [Shiny](https://shiny.posit.co/) app. You can upload mesh files (STL, PLY, OBJ, OFF) to generate agreement measures for all pairwise comparisons, as well as the corresponding aggregated agreement. The intended application is to compare delineated structures for radiotherapy treatment planning.
 
   * [ESAPI export script](https://github.com/dwoll/MeshAgreement/tree/main/inst/extdata) for getting 3D mesh files from Varian Eclipse
 
@@ -17,7 +17,7 @@ Agreement measures for 3D structures saved as mesh files. R package containing a
 
 # Required packages
 
-`MeshAgreement` relies heavily on functionalilty originally developed by [Stéphane Laurent](https://github.com/stla/) which was later adapted to package [CGALmeshops](https://github.com/dwoll/CGALmeshops). The back-end is provided by package [RcppCGAL](https://github.com/ericdunipace/RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry and by package [Rvcg](https://CRAN.R-project.org/package=Rvcg) for the [VCG](http://www.vcglib.net/) library. For the Shiy GUI, the following packages are required, as well:
+`MeshAgreement` relies heavily on functionalilty originally developed by [Stéphane Laurent](https://github.com/stla/) which was later adapted to package [MeshUtils](https://github.com/dwoll/MeshUtils). The back-end is provided by package [RcppCGAL](https://github.com/ericdunipace/RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry and by package [Rvcg](https://CRAN.R-project.org/package=Rvcg) for the [VCG](http://www.vcglib.net/) library. For the Shiy GUI, the following packages are required, as well:
 
   * [shiny](https://CRAN.R-project.org/package=shiny)
   * [bs4Dash](https://CRAN.R-project.org/package=bs4Dash)
