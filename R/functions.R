@@ -15,14 +15,14 @@ get_name_elem <- function(x, pos=1L, sep=" <-> ") {
 remesh_mesh <- function(x, method=c("No", "Isotropic"), ...) {
     method <- match.arg(tolower(method),
                         choices=c("no", "isotropic"))
-    
+
     ## arguments for remesh methods
     args_remesh <- list(isotropic=c("TargetLen", "FeatureAngleDeg",
                                     "MaxSurfDist", "iterations", "Adaptive"))
-    
+
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
-    
+
     if(method == "isotropic") {
         x_rgl      <- toRGL(x)
         argL       <- c(list(x=x_rgl), dotsL_sub)
@@ -36,13 +36,13 @@ remesh_mesh <- function(x, method=c("No", "Isotropic"), ...) {
 smooth_mesh <- function(x, method=c("No", "VCG"), ...) {
     method <- match.arg(tolower(method),
                         choices=c("no", "vcg"))
-    
+
     ## arguments for smoothing methods
     args_remesh <- list(vcg=c("type", "iteration", "lambda", "mu", "delta"))
-    
+
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
-    
+
     if(method == "vcg") {
         x_rgl      <- toRGL(x)
         argL       <- c(list(mesh=x_rgl), dotsL_sub)
@@ -70,7 +70,7 @@ reconstruct_mesh <- function(x,
 
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
-    
+
     if(method == "afs") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call(reconstructAFS, argL)
@@ -119,24 +119,24 @@ read_mesh_one <- function(x,
                           ...) {
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
-    
+
     smooth <- match.arg(tolower(smooth),
                         choices=c("no", "vcg"))
-    
+
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson",
                                        "ball_pivoting", "alpha_wrap"))
 
     ## collect arguments intended to be passed to other functions
     dotsL0 <- list(...)
-    
+
     ## dotsL0 may have 1 extra hierarchy level -> strip
     dotsL <- if(is.null(names(dotsL0)) && (length(dotsL0) == 1L)) {
         unlist(dotsL0, recursive=FALSE)
     } else {
         dotsL0
     }
-    
+
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
@@ -164,7 +164,7 @@ read_mesh_one <- function(x,
     } else {
         mesh_r0
     }
-    
+
     ## re-mesh?
     mesh_r2 <- if(remesh != "no") {
         argL <- c(list(x=mesh_r1, method=remesh), dotsL)
@@ -172,7 +172,7 @@ read_mesh_one <- function(x,
     } else {
         mesh_r1
     }
-    
+
     ## check mesh
     diag_nsi <- !doesSelfIntersect(mesh_r2)
     diag_bv  <- if(diag_nsi) {
@@ -199,7 +199,7 @@ read_mesh_one <- function(x,
             if(!diag_bv) {
                 mesh_r2a <- orientToBoundVolume(mesh_r2a)
             }
-            
+
             mesh_r2a
         } else {
             warning(warn_str)
@@ -250,10 +250,10 @@ read_mesh_obs <- function(x,
 
     smooth <- match.arg(tolower(smooth),
                         choices=c("no", "vcg"))
-    
+
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
-    
+
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
@@ -287,10 +287,10 @@ read_mesh <- function(x,
 
     smooth <- match.arg(tolower(smooth),
                         choices=c("no", "vcg"))
-    
+
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
-    
+
     dotsL <- list(...)
 
     obs_names <- if(missing(name)) {
@@ -430,11 +430,11 @@ get_mesh_ui_pair <- function(x) {
             if(!doesBoundVolume(m_union)) {
                 m_union <- orientToBoundVolume(m_union)
             }
-        
+
             if(!doesBoundVolume(m_intersect)) {
                 m_intersect <- orientToBoundVolume(m_intersect)
             }
-        
+
             vol_u_0 <- getVolume(m_union)
             vol_i_0 <- getVolume(m_intersect)
         }

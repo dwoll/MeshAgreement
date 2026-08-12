@@ -121,7 +121,7 @@ library(MeshAgreement, verbose=FALSE)
 ## data_heart_obsL: list of sample meshes included in MeshAgreement
 heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 
-## omit JSC/DSC to reduce run-time
+## omit JSC / DSC to reduce run-time
 agreeW <- get_mesh_agree(heartL, do_ui=FALSE, silent=TRUE)
 agreeW
 @
@@ -195,7 +195,7 @@ For users who are unfamiliar with \textsf{R}, \texttt{MeshAgreement} includes a 
 %%%%---------------------------------------------------------------------------
 %%%%---------------------------------------------------------------------------
 
-Supported file formats are STL, PLY, OBJ, and OFF. If the same structures are contoured by three different observers, and the resulting mesh files are stored in three corresponding directories, reading in the observer/mesh list can look like this:
+Supported file formats are STL, PLY, OBJ, and OFF. If the same structures are contoured by three different observers, and the resulting mesh files are stored in three corresponding directories, reading in the observer / mesh list can look like this:
 
 <<cReadMesh1>>=
 # ff1 <- list.files("c:/meshes/obs1", pattern="PLY$", full.names=TRUE)

@@ -278,9 +278,9 @@ shiny::shinyApp(
                             }
                             
                             if(!is.null(input$read_mesh_smooth) &&
-                               (input$read_mesh_reconstruct != "No")) {
+                               (input$read_mesh_smooth != "No")) {
                                 smooth_type <- input$read_mesh_smooth_type
-                                smooth_iter   <- input$read_mesh_smooth_iter
+                                smooth_iter <- input$read_mesh_smooth_iter
                                 if(input$read_mesh_smooth_type == "taubin") {
                                     smooth_lambda <- input$read_mesh_smooth_taubin_lambda
                                     smooth_mu     <- input$read_mesh_smooth_taubin_mu
@@ -1003,7 +1003,7 @@ shiny::shinyApp(
                 mesh  <- pairL[[view_select]][["mesh_1"]]
                 if(!is.null(mesh)) {
                     try(close3d())
-                    wire3d(CGALmeshops::toRGL(mesh[["mesh"]]))
+                    wire3d(MeshUtils::toRGL(mesh[["mesh"]]))
                     rglwidget()
                 } else {
                     NULL
@@ -1020,7 +1020,7 @@ shiny::shinyApp(
                 mesh  <- pairL[[view_select]][["mesh_2"]]
                 if(!is.null(mesh)) {
                     try(close3d())
-                    wire3d(CGALmeshops::toRGL(mesh[["mesh"]]))
+                    wire3d(MeshUtils::toRGL(mesh[["mesh"]]))
                     rglwidget()
                 } else {
                     NULL
