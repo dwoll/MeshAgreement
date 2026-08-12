@@ -72,11 +72,11 @@ reconstruct_mesh <- function(x,
     dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
     
     if(method == "afs") {
-        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
+        argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call(reconstructAFS, argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "sss") {
-        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
+        argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call(reconstructSSS, argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "poisson") {
@@ -92,7 +92,7 @@ reconstruct_mesh <- function(x,
             dotsL_sub[["normalsMethod"]] <- NULL
         }
 
-        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
+        argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         mesh_rgl <- do.call(reconstructPoisson, argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "ball_pivoting") {
@@ -101,8 +101,8 @@ reconstruct_mesh <- function(x,
         mesh_rgl <- do.call("vcgBallPivoting", argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "alpha_wrap") {
-        argL     <- c(list(points=x[["vertices"]]), dotsL_sub)
-        mesh_rgl <- do.call("alphaWrap", argL)
+        argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
+        mesh_rgl <- do.call(alphaWrap, argL)
         makeMesh(mesh=mesh_rgl)
     } else if(method == "no") {
         x
@@ -327,14 +327,14 @@ get_mesh_info_one <- function(x) {
 }
 
 get_mesh_info_obs <- function(x) {
-    d_out <- do.call("rbind", Map(get_mesh_info_one, x))
+    d_out <- do.call(rbind, Map(get_mesh_info_one, x))
     rownames(d_out) <- NULL
     d_out
 }
 
 get_mesh_info <- function(x) {
     x_lens <- lengths(x)
-    d_out  <- do.call("rbind", Map(get_mesh_info_obs, x))
+    d_out  <- do.call(rbind, Map(get_mesh_info_obs, x))
     rownames(d_out) <- NULL
     cbind(observer=rep(names(x), times=x_lens),
           d_out)
@@ -585,7 +585,7 @@ get_mesh_agree <- function(x, do_ui=FALSE, chop=TRUE, ...) {
                   do_ui=do_ui,
                   chop =chop)
 
-    d <- do.call("rbind", agreeL)
+    d <- do.call(rbind, agreeL)
     rownames(d) <- NULL
     d
 }
