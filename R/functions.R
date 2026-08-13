@@ -213,7 +213,7 @@ read_mesh_one <- function(x,
     vol_0 <- try(getVolume(mesh_r3))
     ctr_0 <- try(getCentroid(mesh_r3))
 
-    vol <- if(!inherits(vol_0, "try-error")) {
+    vol <- if(!is.na(vol_0) && !inherits(vol_0, "try-error")) {
         if(vol_0 <= 0) {
             mesh_r3 <- orientToBoundVolume(mesh_r3)
             vol_0   <- getVolume(mesh_r3)
@@ -224,7 +224,7 @@ read_mesh_one <- function(x,
         NA_real_
     }
 
-    ctr <- if(!inherits(ctr_0, "try-error")) {
+    ctr <- if(!any(is.na(ctr_0)) && !inherits(ctr_0, "try-error")) {
         ctr_0
     } else {
         rep(NA_real_, 3L)
