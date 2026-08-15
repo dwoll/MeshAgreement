@@ -395,8 +395,8 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
 get_mesh_ui_pair <- function(x) {
     m1 <- x[["mesh_1"]][["mesh"]]
     m2 <- x[["mesh_2"]][["mesh"]]
-    m_union     <- try(meshUnion(       list(m1, m2), clean=TRUE))
-    m_intersect <- try(meshIntersection(list(m1, m2), clean=TRUE))
+    m_union     <- try(boolUnion(       list(m1, m2), clean=TRUE))
+    m_intersect <- try(boolIntersection(list(m1, m2), clean=TRUE))
     ui_ok       <- !(inherits(m_union,     "try-error") ||
                      inherits(m_intersect, "try-error"))
 
@@ -425,8 +425,8 @@ get_mesh_ui_pair <- function(x) {
         vol_u_0 <- try(getVolume(m_union))
         vol_i_0 <- try(getVolume(m_intersect))
 
-        if(inherits(vol_u_0, "try-error") || (vol_u_0 <= 0) ||
-           inherits(vol_i_0, "try-error") || (vol_i_0 <= 0)) {
+        if(inherits(vol_u_0, "try-error") || (vol_u_0 <= 0) || is.na(vol_u_0) ||
+           inherits(vol_i_0, "try-error") || (vol_i_0 <= 0) || is.na(vol_i_0)) {
             if(!doesBoundVolume(m_union)) {
                 m_union <- orientToBoundVolume(m_union)
             }
@@ -499,16 +499,18 @@ get_mesh_agree_pair <- function(x, metro, ui, do_ui=FALSE, chop=TRUE, ...) {
         metro <- get_mesh_metro_pair(x, chop=chop, ...)
     }
 
-    DCOM        <- sqrt(sum((x[["mesh_2"]][["centroid"]] -
-                             x[["mesh_1"]][["centroid"]])^2))
-    HD_forward  <- metro[["ForwardSampling"]][["maxdist"]]
-    HD_backward <- metro[["BackwardSampling"]][["maxdist"]]
-    # HD_approx   <- x[["mesh_1"]][["mesh"]]$HausdorffApproximate(x[["mesh_2"]][["mesh"]], symmetric=TRUE)
-    # HD_est      <- x[["mesh_1"]][["mesh"]]$HausdorffEstimate(   x[["mesh_2"]][["mesh"]], symmetric=TRUE)
+    DCOM  <- sqrt(sum((x[["mesh_2"]][["centroid"]] -
+                       x[["mesh_1"]][["centroid"]])^2))
+    HD_fw <- metro[["ForwardSampling"]][["maxdist"]]
+    HD_bw <- metro[["BackwardSampling"]][["maxdist"]]
+    # HD_est <- MeshUtils::getHausdorffDistance(x[["mesh_1"]][["mesh"]],
+    #                                           x[["mesh_2"]][["mesh"]],
+    #                                           symmetric=TRUE,
+    #                                           errorBound=0.001)
 
-    if(is.finite(HD_forward) && is.finite(HD_backward)) {
-        HD_max <- max(c(HD_forward, HD_backward))
-        HD_avg <- (HD_forward + HD_backward) / 2
+    if(is.finite(HD_fw) && is.finite(HD_bw)) {
+        HD_max <- max(c(HD_fw, HD_bw))
+        HD_avg <- (HD_fw + HD_bw) / 2
     } else {
         HD_max <- NA_real_
         HD_avg <- NA_real_
