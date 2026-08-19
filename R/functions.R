@@ -137,6 +137,17 @@ read_mesh_one <- function(x,
         dotsL0
     }
 
+    ## arguments for makeMesh()
+    args_makeMesh <- c("removeIntersections",
+                       "removeMethod",
+                       "fillHoles",
+                       "fairHole",
+                       "maxNumHoles",
+                       "normals")
+    
+    # remove makeMesh() arguments from dotsL
+    dotsL[names(dotsL) %in% args_makeMesh] <- list(NULL)
+    
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
@@ -144,10 +155,15 @@ read_mesh_one <- function(x,
     }
 
     mesh_raw <- readMeshFile(x)
-    mesh_in  <- makeMesh(mesh_raw[["vertices"]],
-                         mesh_raw[["faces"]],
-                         triangulate=TRUE,
-                         clean      =fix_issues)
+    dotsL_makeMesh <- list(vertices   =mesh_raw[["vertices"]],
+                           faces      =mesh_raw[["faces"]],
+                           triangulate=TRUE,
+                           repairSoup =fix_issues,
+                           dotsL[names(dotsL) %in% args_makeMesh])
+    
+    mesh_in <- do.call(makeMesh,
+                       Filter(function(cmp) { length(cmp) > 0L},
+                              dotsL_makeMesh))
 
     ## reconstruct?
     mesh_r0 <- if(reconstruct != "no") {
@@ -173,7 +189,7 @@ read_mesh_one <- function(x,
         mesh_r1
     }
 
-    ## check mesh
+    ## check mesh - transformations may have changed status
     diag_nsi <- !doesSelfIntersect(mesh_r2)
     diag_bv  <- if(diag_nsi) {
         doesBoundVolume(mesh_r2)
@@ -193,7 +209,9 @@ read_mesh_one <- function(x,
             warn_str <- paste0(warn_str, ". Trying to fix.")
             warning(warn_str)
             if(!diag_nsi) {
-                mesh_r2a <- removeSelfIntersections(mesh_r2, method="auto_snap")
+                mesh_r2a <- removeSelfIntersections(mesh_r2,
+                                                    triangulate=TRUE,
+                                                    method="auto_snap")
             }
 
             if(!diag_bv) {
@@ -210,25 +228,8 @@ read_mesh_one <- function(x,
         mesh_r2
     }
 
-    vol_0 <- try(getVolume(mesh_r3))
-    ctr_0 <- try(getCentroid(mesh_r3))
-
-    vol <- if(!is.na(vol_0) && !inherits(vol_0, "try-error")) {
-        if(vol_0 <= 0) {
-            mesh_r3 <- orientToBoundVolume(mesh_r3)
-            vol_0   <- getVolume(mesh_r3)
-        }
-
-        vol_0
-    } else {
-        NA_real_
-    }
-
-    ctr <- if(!any(is.na(ctr_0)) && !inherits(ctr_0, "try-error")) {
-        ctr_0
-    } else {
-        rep(NA_real_, 3L)
-    }
+    vol <- getVolume(mesh_r3)
+    ctr <- getCentroid(mesh_r3)
 
     list(name    =mesh_name,
          mesh    =mesh_r3,
@@ -395,8 +396,8 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
 get_mesh_ui_pair <- function(x) {
     m1 <- x[["mesh_1"]][["mesh"]]
     m2 <- x[["mesh_2"]][["mesh"]]
-    m_union     <- try(boolUnion(       list(m1, m2), clean=TRUE))
-    m_intersect <- try(boolIntersection(list(m1, m2), clean=TRUE))
+    m_union     <- try(boolUnion(       list(m1, m2), repairSoup=TRUE))
+    m_intersect <- try(boolIntersection(list(m1, m2), repairSoup=TRUE))
     ui_ok       <- !(inherits(m_union,     "try-error") ||
                      inherits(m_intersect, "try-error"))
 

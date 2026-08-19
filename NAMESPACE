@@ -1,13 +1,13 @@
-importFrom(stats, median, sd, var, aggregate, quantile, reshape, setNames)
-importFrom(utils, combn)
+importFrom(stats,
+           aggregate,
+           median,
+           quantile,
+           reshape,
+           sd,
+           setNames,
+           var)
 importFrom(tools, file_path_sans_ext)
-importFrom(Rvcg,
-           vcgBallPivoting,
-           vcgClean,
-           vcgIsotropicRemeshing,
-           vcgMetro,
-           vcgSmooth,
-           vcgVolume)
+importFrom(utils, combn)
 importFrom(MeshUtils,
            readMeshFile, writeMeshFile,
            makeMesh,
@@ -19,6 +19,12 @@ importFrom(MeshUtils,
            doesSelfIntersect, doesBoundVolume, isClosed,
            removeSelfIntersections, orientToBoundVolume,
            getVolume, getCentroid)
+importFrom(Rvcg,
+           vcgBallPivoting,
+           vcgClean,
+           vcgIsotropicRemeshing,
+           vcgMetro,
+           vcgSmooth)
 
 export(get_mesh_agree, get_mesh_agree_pair, get_mesh_agree_long,
        get_mesh_agree_aggr, get_mesh_agree_aggr_long,
