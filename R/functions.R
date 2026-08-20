@@ -158,9 +158,16 @@ read_mesh_one <- function(x,
                              normals    =FALSE),
                         dotsL[names(dotsL) %in% args_makeMesh])
     
+    ## fixed max number of holes allowed
+    ## TODO make this a choice in the shiny frontend
+    if( hasName(dotsL_makeMesh, "fillHoles") &&
+       !hasName(dotsL_makeMesh, "maxNumHoles")) {
+        dotsL_makeMesh$maxNumHoles <- 10L
+    }
+    
     mesh_in <- do.call(makeMesh, dotsL_makeMesh)
 
-    # remove makeMesh() arguments from dotsL
+    ## remove makeMesh() arguments from dotsL
     dotsL[names(dotsL) %in% args_makeMesh] <- list(NULL)
     
     ## reconstruct?
