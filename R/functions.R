@@ -142,11 +142,7 @@ read_mesh_one <- function(x,
                        "removeMethod",
                        "fillHoles",
                        "fairHole",
-                       "maxNumHoles",
-                       "normals")
-    
-    # remove makeMesh() arguments from dotsL
-    dotsL[names(dotsL) %in% args_makeMesh] <- list(NULL)
+                       "maxNumHoles")
     
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -155,16 +151,18 @@ read_mesh_one <- function(x,
     }
 
     mesh_raw <- readMeshFile(x)
-    dotsL_makeMesh <- list(vertices   =mesh_raw[["vertices"]],
-                           faces      =mesh_raw[["faces"]],
-                           triangulate=TRUE,
-                           repairSoup =fix_issues,
-                           dotsL[names(dotsL) %in% args_makeMesh])
+    dotsL_makeMesh <- c(list(vertices   =mesh_raw[["vertices"]],
+                             faces      =mesh_raw[["faces"]],
+                             triangulate=TRUE,
+                             repairSoup =fix_issues,
+                             normals    =FALSE),
+                        dotsL[names(dotsL) %in% args_makeMesh])
     
-    mesh_in <- do.call(makeMesh,
-                       Filter(function(cmp) { length(cmp) > 0L},
-                              dotsL_makeMesh))
+    mesh_in <- do.call(makeMesh, dotsL_makeMesh)
 
+    # remove makeMesh() arguments from dotsL
+    dotsL[names(dotsL) %in% args_makeMesh] <- list(NULL)
+    
     ## reconstruct?
     mesh_r0 <- if(reconstruct != "no") {
         argL <- c(list(x=mesh_in, method=reconstruct), dotsL)
@@ -189,44 +187,45 @@ read_mesh_one <- function(x,
         mesh_r1
     }
 
-    ## check mesh - transformations may have changed status
-    diag_nsi <- !doesSelfIntersect(mesh_r2)
-    diag_bv  <- if(diag_nsi) {
-        doesBoundVolume(mesh_r2)
-    } else {
-        FALSE
-    }
-
-    issues <- c("self intersects", "does not bound volume")
-
-    ## any issue?
-    mesh_r3 <- if(!all(diag_nsi, diag_bv)) {
-        warn_str <- paste0("Mesh ", mesh_name, " has these issues: ",
-                           paste(issues[!c(diag_nsi, diag_bv)],
-                                 collapse=", "))
-
-        if(fix_issues) {
-            warn_str <- paste0(warn_str, ". Trying to fix.")
-            warning(warn_str)
-            if(!diag_nsi) {
-                mesh_r2a <- removeSelfIntersections(mesh_r2,
-                                                    triangulate=TRUE,
-                                                    method="auto_snap")
-            }
-
-            if(!diag_bv) {
-                mesh_r2a <- orientToBoundVolume(mesh_r2a)
-            }
-
-            mesh_r2a
-        } else {
-            warning(warn_str)
-            mesh_r2
-        }
-    } else {
-        ## no issue
-        mesh_r2
-    }
+    # ## check mesh - transformations may have changed status
+    # diag_nsi <- !doesSelfIntersect(mesh_r2)
+    # diag_bv  <- if(diag_nsi) {
+    #     doesBoundVolume(mesh_r2)
+    # } else {
+    #     FALSE
+    # }
+    # 
+    # issues <- c("self intersects", "does not bound volume")
+    # 
+    # ## any issue?
+    # mesh_r3 <- if(!all(diag_nsi, diag_bv)) {
+    #     warn_str <- paste0("Mesh ", mesh_name, " has these issues: ",
+    #                        paste(issues[!c(diag_nsi, diag_bv)],
+    #                              collapse=", "))
+    # 
+    #     if(fix_issues) {
+    #         warn_str <- paste0(warn_str, ". Trying to fix.")
+    #         warning(warn_str)
+    #         if(!diag_nsi) {
+    #             mesh_r2a <- removeSelfIntersections(mesh_r2,
+    #                                                 triangulate=TRUE,
+    #                                                 method="auto_snap")
+    #         }
+    # 
+    #         if(!diag_bv) {
+    #             mesh_r2a <- orientToBoundVolume(mesh_r2a)
+    #         }
+    # 
+    #         mesh_r2a
+    #     } else {
+    #         warning(warn_str)
+    #         mesh_r2
+    #     }
+    # } else {
+    #     ## no issue
+    #     mesh_r2
+    # }
+    mesh_r3 <- mesh_r2
 
     vol <- getVolume(mesh_r3)
     ctr <- getCentroid(mesh_r3)
