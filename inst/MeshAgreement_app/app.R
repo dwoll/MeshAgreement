@@ -291,8 +291,10 @@ shiny::shinyApp(
                             
                             argL <- list(x              =f_files,
                                          name           =f_names,
+                                         ##
                                          fix_issues     =input$read_mesh_fix_issues,
-                                         #
+                                         removeIntersections=input$read_mesh_remove_sints,
+                                         fillHoles      =input$read_mesh_fill_holes,
                                          remesh         =input$read_mesh_remesh,
                                          smooth         =input$read_mesh_smooth,
                                          ##
@@ -467,7 +469,9 @@ shiny::shinyApp(
         })
         output$ui_import_fix <- renderUI({
             if(input$meshes_input_source == "file") {
-                tagList(checkboxInput("read_mesh_fix_issues", "Try to fix mesh issues on import?", value=TRUE))
+                tagList(checkboxInput("read_mesh_fix_issues",   "Try to fix basic mesh issues on import?",     value=TRUE),
+                        checkboxInput("read_mesh_remove_sints", "Try to remove self-intersections on import?", value=FALSE),
+                        checkboxInput("read_mesh_fill_holes",   "Try to fill holes on import?",                value=FALSE))
             } else {
                 NULL
             }
