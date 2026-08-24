@@ -150,7 +150,7 @@ shiny::shinyApp(
                 } else {
                     input$num_observers
                 }
-                
+
                 meshL <- if(input$meshes_input_source == "builtin") {
                     if(exists("CGALmesh_heart_obsL") && !is.null(CGALmesh_heart_obsL)) {
                         ## use builtin data
@@ -171,14 +171,14 @@ shiny::shinyApp(
                     } else {
                         n_observers
                     }
-                    
+
                     ## for each file selection element -> read files
                     ll <- lapply(seq_len(n_file_sel), function(i) {
                         input_file_sel <- input[[sprintf("file_sel_%.2d", i)]]
                         if(!is.null(input_file_sel)) {
                             f_files <- input_file_sel$datapath
                             f_names <- input_file_sel$name
-                            
+
                             isorem_TargetLen       <- NULL
                             isorem_FeatureAngleDeg <- NULL
                             isorem_MaxSurfDist     <- NULL
@@ -215,7 +215,7 @@ shiny::shinyApp(
                             smooth_lambda          <- NULL
                             smooth_mu              <- NULL
                             smooth_delta           <- NULL
-                            
+
                             ## remeshing options
                             if(!is.null(input$read_mesh_remesh) &&
                                (input$read_mesh_remesh != "No")) {
@@ -226,7 +226,7 @@ shiny::shinyApp(
                                 isorem_Adaptive        <- input$read_mesh_remesh_iso_adapt
                                 # isorem_relaxSteps      <- input$read_mesh_remesh_iso_relstep
                             }
-                            
+
                             ## some surface reconstruction requested
                             if(!is.null(input$read_mesh_reconstruct) &&
                                (input$read_mesh_reconstruct != "No")) {
@@ -253,7 +253,7 @@ shiny::shinyApp(
                                     } else {
                                         stop("Invalid Poisson normals method")
                                     }
-                                    
+
                                     pois_spacing <- if(input$read_mesh_reconstruct_pois_spmethod == "avg") {
                                         NULL
                                     } else {
@@ -262,7 +262,7 @@ shiny::shinyApp(
                                         stopifnot(val > 0)
                                         val
                                     }
-                                    
+
                                     pois_smAngle     <- input$read_mesh_reconstruct_pois_smang
                                     pois_smRadius    <- input$read_mesh_reconstruct_pois_smrad
                                     pois_smDistance  <- input$read_mesh_reconstruct_pois_smdst
@@ -270,13 +270,13 @@ shiny::shinyApp(
                                     ballp_radius      <- input$read_mesh_reconstruct_ballpivot_radius
                                     ballp_clustering  <- input$read_mesh_reconstruct_ballpivot_clust
                                     ballp_angle       <- input$read_mesh_reconstruct_ballpivot_angle
-                                    ballp_deleteFaces <- input$read_mesh_reconstruct_ballpviot_delface
+                                    ballp_deleteFaces <- input$read_mesh_reconstruct_ballpivot_delface
                                 } else if(input$read_mesh_reconstruct == "Alpha_Wrap") {
                                     alwrap_alphaRel   <- input$read_mesh_reconstruct_alwrap_alphaRel
                                     alwrap_offsetRel  <- input$read_mesh_reconstruct_alwrap_offsetRel
                                 }
                             }
-                            
+
                             if(!is.null(input$read_mesh_smooth) &&
                                (input$read_mesh_smooth != "No")) {
                                 smooth_type <- input$read_mesh_smooth_type
@@ -288,7 +288,7 @@ shiny::shinyApp(
                                     smooth_delta  <- input$read_mesh_smooth_fujilaplace_delta
                                 }
                             }
-                            
+
                             argL <- list(x              =f_files,
                                          name           =f_names,
                                          ##
@@ -336,13 +336,13 @@ shiny::shinyApp(
                                          lambda         =smooth_lambda,
                                          mu             =smooth_mu,
                                          delta          =smooth_delta)
-                            
+
                             do.call("read_mesh_obs", Filter(Negate(is.null), argL))
                         } else {
                             NULL
                         }
                     })
-                    
+
                     ll <- Filter(Negate(is.null), ll)
                     if(input$meshes_sel_mode == "all_pairwise") {
                         meshL_to_observerL(unlist(ll, recursive=FALSE))
@@ -350,7 +350,7 @@ shiny::shinyApp(
                         setNames(ll, sprintf("Observer_%.2d", seq_along(ll)))
                     }
                 }
-                
+
                 meshL
             })
         })
@@ -366,7 +366,7 @@ shiny::shinyApp(
                         observer
                     }
                 })
-                
+
                 setNames(ll, names(meshL))
             } else {
                 NULL
@@ -385,7 +385,7 @@ shiny::shinyApp(
             if(!is.null(meshL)) {
                 valid_nSamples <- !is.null(input$vcgMetro_nSamples) &&
                                   (input$vcgMetro_nSamples >= 0L)
-                
+
                 valid_nSamplesArea <- !is.null(input$vcgMetro_nSamplesArea) &&
                     (input$vcgMetro_nSamplesArea >= 0L)
 
@@ -394,8 +394,8 @@ shiny::shinyApp(
                 } else {
                     0L
                 }
-                
-                nSamplesArea <- if(valid_nSamples) {
+
+                nSamplesArea <- if(valid_nSamplesArea) {
                     input$vcgMetro_nSamplesArea
                 } else {
                     0L
@@ -415,7 +415,7 @@ shiny::shinyApp(
                              searchStruct=input$vcgMetro_searchStruct,
                              from        =input$vcgMetro_from,
                              to          =input$vcgMetro_to)
-                
+
                 do.call("get_mesh_metro", Filter(Negate(is.null), argL))
             } else {
                 NULL
@@ -439,7 +439,7 @@ shiny::shinyApp(
                                    metro=metroL,
                                    ui   =uiL,
                                    do_ui=do_ui)
-                
+
                 d <- do.call("rbind", agree_pairL)
                 rownames(d) <- NULL
                 d
@@ -597,7 +597,7 @@ shiny::shinyApp(
                              "Surface reconstruction",
                              choices=c("None"="No",
                                        "AFS"="AFS",
-                                       "SSS"="SSS", 
+                                       "SSS"="SSS",
                                        "Poisson"="Poisson",
                                        "Ball Pivoting"="Ball_Pivot",
                                        "Alpha Wrap"="Alpha_Wrap"),
@@ -672,7 +672,7 @@ shiny::shinyApp(
                (input$read_mesh_reconstruct == "Poisson")        &&
                !is.null(input$read_mesh_reconstruct_pois_normethod) &&
                !is.null(input$read_mesh_reconstruct_pois_spmethod)) {
-                
+
                 ui_pois_normals <- if(input$read_mesh_reconstruct_pois_normethod == "VCG") {
                     NULL
                 } else {
@@ -734,7 +734,7 @@ shiny::shinyApp(
                                      min=0.01,
                                      value=round(pi/2, 3),
                                      step=0.01),
-                        checkboxInput("read_mesh_reconstruct_ballpviot_delface",
+                        checkboxInput("read_mesh_reconstruct_ballpivot_delface",
                                      "Delete Faces?",
                                      value=FALSE))
             } else {
@@ -797,16 +797,16 @@ shiny::shinyApp(
                     valid_n <- !is.null(input$num_observers) &&
                                (input$num_observers >= 2L)   &&
                                (input$num_observers <=100L)
-                    
+
                     n_observers <- if(!valid_n) {
                         2L
                     } else {
                         round(input$num_observers)
                     }
-                    
+
                     sel_label <- paste0(" (Observer ", sprintf("%.2d", seq_len(n_observers)), ")")
                 }
-                
+
                 file_selL <- lapply(seq_len(n_observers), function(i) {
                     finput_id    <- sprintf("file_sel_%.2d", i)
                     finput_label <- paste0("Select files", sel_label[i], ":")
@@ -816,7 +816,7 @@ shiny::shinyApp(
                                      width="100%",
                                      multiple=TRUE))
                 })
-                
+
                 ## weed out NULL components, convert the list to a tagList and return
                 file_selL <- Filter(Negate(is.null), file_selL)
                 fluidRow(do.call(tagList, file_selL))
@@ -833,7 +833,7 @@ shiny::shinyApp(
                     } else {
                         input$num_observers
                     }
-                    
+
                     meshL <- react_file_sel()
                     if(!is.null(meshL)) {
                         n_obs_max <- min(c(length(meshL), n_observers))
@@ -847,11 +847,11 @@ shiny::shinyApp(
                                              labels=ranklist_labels,
                                              input_id=ranklist_inputid))
                         })
-                        
+
                         ## weed out NULL components, convert the list to a tagList and return
                         ranklistL <- Filter(Negate(is.null), ranklistL)
                         tagList(fluidRow(column(width=12,
-                                                p("Drag-and-drop fifle names to define comparison sets.",
+                                                p("Drag-and-drop file names to define comparison sets.",
                                                   "All first elements are compared to each other between observers, and so on."))),
                                 fluidRow(do.call(tagList, ranklistL)))
                     } else {
@@ -926,7 +926,7 @@ shiny::shinyApp(
             # input$apply_compare
             # isolate({
                 d_agree_pairW <- react_mesh_agree()
-                
+
                 if(!is.null(d_agree_pairW)) {
                     cols_numeric <- unname(which(vapply(d_agree_pairW, is.numeric, logical(1))))
                     DT_out <- DT::datatable(d_agree_pairW,
@@ -944,7 +944,7 @@ shiny::shinyApp(
             # isolate({
                 d_agree_pairW <- react_mesh_agree()
                 if(!is.null(d_agree_pairW)) {
-                    d_agree_aggr <- get_mesh_agree_aggr(d_agree_pairW)                    
+                    d_agree_aggr <- get_mesh_agree_aggr(d_agree_pairW)
                     cols_numeric <- unname(which(vapply(d_agree_aggr, is.numeric, logical(1))))
                     DT_out <- DT::datatable(d_agree_aggr,
                                             extensions="Buttons",
@@ -958,7 +958,7 @@ shiny::shinyApp(
         })
         output$diag_agree_pairwise <- renderPlotly({
             d_agree_pairW <- react_mesh_agree()
-            
+
             if(!is.null(d_agree_pairW)) {
                 d_agree_pairL <- get_mesh_agree_long(d_agree_pairW)
                 d_agree_pairL[["pair"]] <- paste(d_agree_pairL[["mesh_1"]],
@@ -970,7 +970,7 @@ shiny::shinyApp(
                     xlab(NULL) +
                     ylab(NULL) +
                     theme_bw()
-                
+
                 ggplotly(p, height=600)
             } else {
                 NULL
@@ -979,7 +979,7 @@ shiny::shinyApp(
         })
         output$diag_agree_aggr <- renderPlotly({
             d_agree_pairW <- react_mesh_agree()
-            
+
             if(!is.null(d_agree_pairW)) {
                 d_agree_aggrW <- get_mesh_agree_aggr(d_agree_pairW)
                 d_agree_aggrL <- get_mesh_agree_aggr_long(d_agree_aggrW)
@@ -992,7 +992,7 @@ shiny::shinyApp(
                     xlab(NULL) +
                     ylab(NULL) +
                     theme_bw()
-                
+
                 ggplotly(p, height=600)
             } else {
                 NULL

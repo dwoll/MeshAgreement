@@ -143,7 +143,7 @@ read_mesh_one <- function(x,
                        "fillHoles",
                        "fairHole",
                        "maxNumHoles")
-    
+
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
     } else {
@@ -157,19 +157,19 @@ read_mesh_one <- function(x,
                              repairSoup =fix_issues,
                              normals    =FALSE),
                         dotsL[names(dotsL) %in% args_makeMesh])
-    
+
     ## fixed max number of holes allowed
     ## TODO make this a choice in the shiny frontend
     if( hasName(dotsL_makeMesh, "fillHoles") &&
        !hasName(dotsL_makeMesh, "maxNumHoles")) {
         dotsL_makeMesh$maxNumHoles <- 10L
     }
-    
+
     mesh_in <- do.call(makeMesh, dotsL_makeMesh)
 
     ## remove makeMesh() arguments from dotsL
     dotsL[names(dotsL) %in% args_makeMesh] <- list(NULL)
-    
+
     ## reconstruct?
     mesh_r0 <- if(reconstruct != "no") {
         argL <- c(list(x=mesh_in, method=reconstruct), dotsL)
@@ -194,51 +194,11 @@ read_mesh_one <- function(x,
         mesh_r1
     }
 
-    # ## check mesh - transformations may have changed status
-    # diag_nsi <- !doesSelfIntersect(mesh_r2)
-    # diag_bv  <- if(diag_nsi) {
-    #     doesBoundVolume(mesh_r2)
-    # } else {
-    #     FALSE
-    # }
-    # 
-    # issues <- c("self intersects", "does not bound volume")
-    # 
-    # ## any issue?
-    # mesh_r3 <- if(!all(diag_nsi, diag_bv)) {
-    #     warn_str <- paste0("Mesh ", mesh_name, " has these issues: ",
-    #                        paste(issues[!c(diag_nsi, diag_bv)],
-    #                              collapse=", "))
-    # 
-    #     if(fix_issues) {
-    #         warn_str <- paste0(warn_str, ". Trying to fix.")
-    #         warning(warn_str)
-    #         if(!diag_nsi) {
-    #             mesh_r2a <- removeSelfIntersections(mesh_r2,
-    #                                                 triangulate=TRUE,
-    #                                                 method="auto_snap")
-    #         }
-    # 
-    #         if(!diag_bv) {
-    #             mesh_r2a <- orientToBoundVolume(mesh_r2a)
-    #         }
-    # 
-    #         mesh_r2a
-    #     } else {
-    #         warning(warn_str)
-    #         mesh_r2
-    #     }
-    # } else {
-    #     ## no issue
-    #     mesh_r2
-    # }
-    mesh_r3 <- mesh_r2
-
-    vol <- getVolume(mesh_r3)
-    ctr <- getCentroid(mesh_r3)
+    vol <- getVolume(mesh_r2)
+    ctr <- getCentroid(mesh_r2)
 
     list(name    =mesh_name,
-         mesh    =mesh_r3,
+         mesh    =mesh_r2,
          volume  =vol,
          centroid=ctr)
 }
