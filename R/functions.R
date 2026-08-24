@@ -396,8 +396,8 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
 get_mesh_ui_pair <- function(x) {
     m1 <- x[["mesh_1"]][["mesh"]]
     m2 <- x[["mesh_2"]][["mesh"]]
-    m_union     <- try(boolUnion(       list(m1, m2), repairSoup=TRUE))
-    m_intersect <- try(boolIntersection(list(m1, m2), repairSoup=TRUE))
+    m_union     <- try(boolUnion(       list(m1, m2)))
+    m_intersect <- try(boolIntersection(list(m1, m2)))
     ui_ok       <- !(inherits(m_union,     "try-error") ||
                      inherits(m_intersect, "try-error"))
 
