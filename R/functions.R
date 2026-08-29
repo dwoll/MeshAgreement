@@ -159,7 +159,7 @@ read_mesh_one <- function(x,
                         dotsL[names(dotsL) %in% args_makeMesh])
 
     ## fixed max number of holes allowed
-    ## TODO make this a choice in the shiny frontend
+    ## TODO expose this a choice in the shiny frontend
     if( hasName(dotsL_makeMesh, "fillHoles") &&
        !hasName(dotsL_makeMesh, "maxNumHoles")) {
         dotsL_makeMesh$maxNumHoles <- 10L
