@@ -599,8 +599,9 @@ shiny::shinyApp(
                                        "AFS"="AFS",
                                        "SSS"="SSS",
                                        "Poisson"="Poisson",
-                                       "Ball Pivoting"="Ball_Pivot",
-                                       "Alpha Wrap"="Alpha_Wrap"),
+                                       "Ball Pivoting"="Ball_Pivot"#,
+                                       # "Alpha Wrap"="Alpha_Wrap"
+                                       ),
                              selected="No",
                              inline=TRUE)
             } else {

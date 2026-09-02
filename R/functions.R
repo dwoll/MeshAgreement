@@ -86,7 +86,7 @@ reconstruct_mesh <- function(x,
             normals <- dotsL_sub[["normals"]]
             if(!is.null(normals) &&
                (pnm %in% c("jet", "pca"))) {
-                dotsL_sub[["normals"]] <- getSomeNormals(normals, method=pnm)
+                dotsL_sub[["normals"]] <- getNormalsFun(normals, method=pnm)
             }
 
             dotsL_sub[["normalsMethod"]] <- NULL
