@@ -294,7 +294,7 @@ get_mesh_info_one <- function(x) {
     mesh <- x[["mesh"]]
     data.frame(name=x[["name"]],
                n_verts=nrow(mesh[["vertices"]]),
-               n_faces=ncol(mesh[["faces"]]),
+               n_faces=nrow(mesh[["faces"]]),
                volume=x[["volume"]],
                ctr_x=x[["centroid"]][1],
                ctr_y=x[["centroid"]][2],
