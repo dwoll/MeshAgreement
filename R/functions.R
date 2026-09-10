@@ -27,7 +27,7 @@ remesh_mesh <- function(x, method=c("No", "Isotropic"), ...) {
         x_rgl      <- toRGL(x)
         argL       <- c(list(x=x_rgl), dotsL_sub)
         mesh_rgl_r <- do.call(vcgIsotropicRemeshing, argL)
-        makeMesh(mesh=mesh_rgl_r) # TODO shortcut version
+        makeMeshValid(mesh_rgl_r)
     } else if(method == "no") {
         x
     }
@@ -47,7 +47,7 @@ smooth_mesh <- function(x, method=c("No", "VCG"), ...) {
         x_rgl      <- toRGL(x)
         argL       <- c(list(mesh=x_rgl), dotsL_sub)
         mesh_rgl_r <- do.call(vcgSmooth, argL)
-        makeMesh(mesh=mesh_rgl_r) # TODO shortcut version
+        makeMeshValid(mesh_rgl_r)
     } else if(method == "no") {
         x
     }
@@ -73,12 +73,10 @@ reconstruct_mesh <- function(x,
 
     if(method == "afs") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
-        mesh_rgl <- do.call(reconstructAFS, argL)
-        makeMesh(mesh=mesh_rgl)
+        do.call(reconstructAFS, argL)
     } else if(method == "sss") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
-        mesh_rgl <- do.call(reconstructSSS, argL)
-        makeMesh(mesh=mesh_rgl)
+        do.call(reconstructSSS, argL)
     } else if(method == "poisson") {
         normalsMethod <- dotsL_sub[["normalsMethod"]]
         if(!is.null(normalsMethod)) {
@@ -93,17 +91,14 @@ reconstruct_mesh <- function(x,
         }
 
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
-        mesh_rgl <- do.call(reconstructPoisson, argL)
-        makeMesh(mesh=mesh_rgl)
+        do.call(reconstructPoisson, argL)
     } else if(method == "ball_pivoting") {
         x_rgl    <- toRGL(x)
         argL     <- c(list(x=x_rgl), dotsL_sub)
         mesh_rgl <- do.call("vcgBallPivoting", argL)
-        makeMesh(mesh=mesh_rgl)
     } else if(method == "alpha_wrap") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
-        mesh_rgl <- do.call(alphaWrap, argL)
-        makeMesh(mesh=mesh_rgl)
+        do.call(alphaWrap, argL)
     } else if(method == "no") {
         x
     }
@@ -150,9 +145,10 @@ read_mesh_one <- function(x,
         basename(tools::file_path_sans_ext(name))
     }
 
-    mesh_raw <- readMeshFile(x)
-    dotsL_makeMesh <- c(list(vertices   =mesh_raw[["vertices"]],
-                             faces      =mesh_raw[["faces"]],
+    # mesh_raw <- readMeshFile(x)
+    dotsL_makeMesh <- c(list(# vertices   =mesh_raw[["vertices"]],
+                             # faces      =mesh_raw[["faces"]],
+                             x          =x,
                              triangulate=TRUE,
                              repairSoup =fix_issues,
                              normals    =FALSE),
@@ -648,7 +644,9 @@ meshL_to_observerL <- function(x) {
 mesh3dL_to_CGALmeshL <- function(x) {
     convert_mesh_one <- function(y) {
         if(inherits(y[["mesh"]], "mesh3d")) {
-            y[["mesh"]] <- makeMesh(mesh=y[["mesh"]])
+            y[["mesh"]] <- makeMeshValid(y[["mesh"]])
+        } else if(!inherits(y[["mesh"]], "CGALmesh")) {
+            stop("Input must be either `mesh3d` or `CGALmesh` object.")
         }
 
         y
