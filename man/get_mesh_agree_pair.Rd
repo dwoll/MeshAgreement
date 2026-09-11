@@ -32,6 +32,8 @@ get_mesh_agree_pair(x, metro, ui, do_ui=FALSE, chop=TRUE, ...)
 \item{DSC}{Dice similarity coefficient.}
 }
 \references{
+Maier-Hein et al. Metrics reloaded: recommendations for image analysis validation. Nat Methods 2024; 21: 195–212.
+
 Fotina et al. Critical discussion of evaluation parameters for inter-observer variability in target definition for radiation therapy. Strahlenther Onkol 2012; 188: 160-167.
 
 Hanna  et al. Geometrical Analysis of Radiotherapy Target Volume Delineation: a Systematic Review of Reported Comparison Methods. Clin Oncol 2010; 22, 515-525.

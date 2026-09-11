@@ -7,13 +7,15 @@ Agreement measures for 3D structures saved as mesh files. R package containing a
 
 # Implemented agreement measures
 
+See [dkfz metrics reloaded](https://metrics-reloaded.dkfz.de/) for extensive discussion.
+
  * Pairwise distance-based and volume-overlap-based metrics
      * DCOM: Distance between centers of mass
      * ASD: Average surface distance
      * RMSD: Root mean squared surface distance
      * HD_max: Hausdorff distance - max of both directed HDs
      * HD_avg: Hausdorff distance - average of both directed HDs
- * JSC: Jaccard similarity coefficient
+ * JSC: Jaccard similarity coefficient (Union over Intersection, IoU)
  * DSC: Dice similarity coefficient
 
 # Required packages
@@ -27,6 +29,7 @@ Agreement measures for 3D structures saved as mesh files. R package containing a
 
 # Literature (selection)
 
+ * Maier-Hein et al. Metrics reloaded: recommendations for image analysis validation. Nat Methods 2024; 21: 195–212.
  * Fotina et al. Critical discussion of evaluation parameters for inter-observer variability in target definition for radiation therapy. Strahlenther Onkol 2012; 188: 160-167.
  * Hanna  et al. Geometrical Analysis of Radiotherapy Target Volume Delineation: a Systematic Review of Reported Comparison Methods. Clin Oncol 2010; 22, 515-525.
  * Heimann et al. Comparison and Evaluation of Methods for Liver Segmentation From CT Datasets. IEEE Trans Med Imaging 2009; 28: 1251-1265.

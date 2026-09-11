@@ -82,9 +82,9 @@ options(replace.assign=TRUE,
 %%%%---------------------------------------------------------------------------
 %%%%---------------------------------------------------------------------------
 
-\texttt{MeshAgreement} is an add-on package for the free statistical environment \textsf{R} \cite{RDevelopmentCoreTeam2008c}. It provides functionality to read 3D mesh files, to calculate distance-based as well as volume-overlap-based agreement measures for 3D structures, and to plot the meshes.
+\texttt{MeshAgreement} is an add-on package for the free statistical environment \textsf{R} \cite{RDevelopmentCoreTeam2008c}. It provides functionality to read 3D surface mesh files, to calculate distance-based as well as volume-overlap-based agreement measures for 3D structures, and to plot the meshes.
 
-The application motivating development of \texttt{MeshAgreement} is to compare delineated structures for radiotherapy treatment planning. In order to export 3D mesh files in PLY format from Varian Eclipse, you can use an ESAPI script included in the package. The path to the script can be found like this - re-run in current R session to find the correct path on a given system:
+The application motivating development of \texttt{MeshAgreement} is to compare delineated structures for radiotherapy treatment planning, typically \emph{organs at risk}. In order to export 3D mesh files in PLY format from Varian Eclipse, you can use an ESAPI script included in the package. The path to the script can be found like this - re-run in current R session to find the correct path on a given system:
 
 <<cESAPI>>=
 esapi_location <- system.file("extdata", package="MeshAgreement")
@@ -230,7 +230,7 @@ get_mesh_info(heartL)
 %%%%---------------------------------------------------------------------------
 %%%%---------------------------------------------------------------------------
 
-You can calculate distance-based as well as volume-overlap-based agreement measures for all pairwise comparisons between meshes. The following measures are included \cite{Sherer2021, Heimann2009, Fotina2012, Babalola2009, Hanna2010, Jaccard1912, Dice1945}:
+You can calculate distance-based as well as volume-overlap-based agreement measures for all pairwise comparisons between meshes. The following measures are included \cite{MaierHein2024, Sherer2021, Heimann2009, Fotina2012, Babalola2009, Hanna2010, Jaccard1912, Dice1945}:
 
 \begin{itemize}
 \item Distance-based measures
@@ -243,7 +243,7 @@ You can calculate distance-based as well as volume-overlap-based agreement measu
 \end{itemize}
 \item Volume-overlap-based measures
 \begin{itemize}
-\item JSC: Jaccard similarity coefficient
+\item JSC: Jaccard similarity coefficient (= Intersection over Union, IoU)
 \item DSC: Dice similarity coefficient
 \end{itemize}
 \end{itemize}

@@ -9,8 +9,8 @@ importFrom(stats,
 importFrom(tools, file_path_sans_ext)
 importFrom(utils, combn)
 importFrom(MeshUtils,
-           readMeshFile, writeMeshFile,
-           makeMesh,
+           writeMeshFile,
+           makeMesh, makeMeshValid,
            toRGL,
            getNormalsFun,
            boolIntersection, boolUnion,

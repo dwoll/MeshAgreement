@@ -474,11 +474,16 @@ get_mesh_agree_pair <- function(x, metro, ui, do_ui=FALSE, chop=TRUE, ...) {
                        x[["mesh_1"]][["centroid"]])^2))
     HD_fw <- metro[["ForwardSampling"]][["maxdist"]]
     HD_bw <- metro[["BackwardSampling"]][["maxdist"]]
-    # HD_est <- MeshUtils::getHausdorffDistance(x[["mesh_1"]][["mesh"]],
-    #                                           x[["mesh_2"]][["mesh"]],
-    #                                           symmetric=TRUE,
-    #                                           errorBound=0.001)
-
+    # HD_fw <- MeshUtils::getHausdorffDistance(x[["mesh_1"]][["mesh"]],
+    #                                          x[["mesh_2"]][["mesh"]],
+    #                                          symmetric=FALSE,
+    #                                          errorBound=0.001)
+    # 
+    # HD_bw <- MeshUtils::getHausdorffDistance(x[["mesh_2"]][["mesh"]],
+    #                                          x[["mesh_1"]][["mesh"]],
+    #                                          symmetric=FALSE,
+    #                                          errorBound=0.001)
+    
     if(is.finite(HD_fw) && is.finite(HD_bw)) {
         HD_max <- max(c(HD_fw, HD_bw))
         HD_avg <- (HD_fw + HD_bw) / 2
