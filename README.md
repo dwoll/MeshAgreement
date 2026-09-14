@@ -10,12 +10,12 @@ Agreement measures for 3D structures saved as mesh files. R package containing a
 See [dkfz metrics reloaded](https://metrics-reloaded.dkfz.de/) for extensive discussion.
 
  * Pairwise distance-based and volume-overlap-based metrics
-     * DCOM: Distance between centers of mass
+     * DCOM: Distance between respective centers of mass
      * ASD: Average surface distance
      * RMSD: Root mean squared surface distance
      * HD_max: Hausdorff distance - max of both directed HDs
      * HD_avg: Hausdorff distance - average of both directed HDs
- * JSC: Jaccard similarity coefficient (Union over Intersection, IoU)
+ * JSC: Jaccard similarity coefficient (Intersection over Union, IoU)
  * DSC: Dice similarity coefficient
 
 # Required packages
