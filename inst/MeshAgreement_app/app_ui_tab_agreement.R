@@ -17,7 +17,7 @@ fluidPage(
     fluidRow(
         column(
             width=12,
-            box(title="Options for VCG metro distance calculations",
+            box(title="Options for surface distance calculations",
                 width=12,
                 # height="650px",
                 status=NULL,
@@ -26,11 +26,8 @@ fluidPage(
                 collapsible=TRUE,
                 collapsed=TRUE,
                 p("For the definition of the following options, see the",
-                  tags$a(href="https://cran.r-project.org/web/packages/Rvcg/refman/Rvcg.html#vcgMetrol",
-                         "documentation of the Rvcg::vcgMetro() function"),
-                  "as well the",
-                  tags$a(href="http://vcglib.net/metro.html",
-                         "VCG metro page")),
+                  tags$a(href="https://github.com/dwoll/MeshUtils/blob/main/R/hausdorff.R",
+                         "documentation of the MeshUtils::getSurfaceDist() function")),
                 uiOutput("ui_mesh_agree_metro_options")
             )
         )

@@ -16,9 +16,9 @@ get_mesh_info(x)
 \item{n_verts}{Number of vertices.}
 \item{n_faces}{Number of faces.}
 \item{volume}{Mesh volume.}
-\item{ctr_x}{Centroid x-coordinate.}
-\item{ctr_y}{Centroid y-coordinate.}
-\item{ctr_z}{Centroid z-coordinate.}
+\item{ctr_x}{Centroid (center of mass) x-coordinate.}
+\item{ctr_y}{Centroid (center of mass) y-coordinate.}
+\item{ctr_z}{Centroid (center of mass) z-coordinate.}
 }
 \seealso{
 \code{\link[MeshAgreement]{read_mesh}},

@@ -6,7 +6,8 @@
 \description{
 Calculates distance-based and volume-overlap-based
 agreement measures for triangular 3D meshes. These include
-the Hausdorff distance, the average surface distance, the
+the Hausdorff distance (including HD95),
+the average surface distance, the
 Dice similarity coefficient, and the Jaccard similarity
 coefficient as documented in Stockinger et al. (2021)
 <doi:10.1186/s13014-021-01965-5>. Overall agreement for
@@ -49,5 +50,5 @@ Sherer et al. Metrics to evaluate the performance of auto-segmentation for radia
 \examples{
 heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)
 pairL  <- get_mesh_pairs(heartL)
-get_mesh_agree_pair(pairL[[1]], do_ui=FALSE, silent=TRUE)
+get_mesh_agree_pair(pairL[[1]], do_ui=FALSE)
 }

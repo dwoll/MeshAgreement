@@ -5,7 +5,7 @@
 \usage{read_mesh(x, name, fix_issues=TRUE,
           reconstruct=c("No", "AFS", "SSS", "Poisson", "Ball_Pivoting",
                         "Alpha_Wrap"),
-          smooth=c("No", "VCG"),
+          smooth=c("No", "VCG", "CGAL"),
           remesh=c("No", "Isotropic"),
           ...)}
 \arguments{
@@ -13,18 +13,19 @@
   \item{name}{\code{list} of \code{character} vectors of mesh names that should be assigned to the mesh objects. If missing, names are taken from the file names.}
   \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections, see \code{\link[MeshUtils]{readMeshFile}}.}
   \item{reconstruct}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[MeshUtils]{reconstructAFS}}. \code{"SSS"} uses \code{\link[MeshUtils]{reconstructSSS}}. \code{"Poisson"} uses \code{\link[MeshUtils]{reconstructPoisson}}. \code{"Ball_Pivoting"} uses \code{\link[Rvcg]{vcgBallPivoting}}. \code{"Alpha_Wrap"} uses \code{\link[MeshUtils]{alphaWrap}}.}
-  \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}.}
+  \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}, \code{"CGAL"} uses \code{\link[MeshUtils]{smoothShape}}.}
   \item{remesh}{\code{character}. \code{"Isotropic"} uses \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
   \item{...}{Options passed to \code{\link[MeshUtils]{reconstructAFS}}, \code{\link[MeshUtils]{reconstructSSS}}, \code{\link[MeshUtils]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[MeshUtils]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF. For subsequent comparison, the first file from observer 1 will be paired with the first file from observer 2, and so on.}
 \value{\code{list} (each component representing one observer) of \code{list}s of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[MeshUtils]{CGALmesh}} object. Sample object given in \code{\link[MeshAgreement]{data_heart_obsL}}. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read several mesh files from one observer. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
 \seealso{
-\code{\link[MeshUtils]{readMeshFile}},
+\code{\link[MeshUtils]{makeMesh}},
 \code{\link[MeshUtils]{reconstructAFS}},
 \code{\link[MeshUtils]{reconstructSSS}},
 \code{\link[MeshUtils]{reconstructPoisson}},
 \code{\link[MeshUtils]{alphaWrap}},
+\code{\link[MeshUtils]{smoothShape}},
 \code{\link[Rvcg]{vcgBallPivoting}},
 \code{\link[Rvcg]{vcgIsotropicRemeshing}},
 \code{\link[Rvcg]{vcgSmooth}},
@@ -41,7 +42,8 @@ if(interactive()) {
     obsL    <- read_mesh(list(Obs01=ff1,
                               Obs02=ff2,
                               Obs03=ff3),
-                         reconstruct="AFS")
+                         fillHoles=TRUE,
+                         verbose=TRUE)
 
     get_mesh_info(obsL)
 }

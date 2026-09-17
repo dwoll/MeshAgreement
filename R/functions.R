@@ -33,12 +33,13 @@ remesh_mesh <- function(x, method=c("No", "Isotropic"), ...) {
     }
 }
 
-smooth_mesh <- function(x, method=c("No", "VCG"), ...) {
+smooth_mesh <- function(x, method=c("No", "VCG", "CGAL"), ...) {
     method <- match.arg(tolower(method),
-                        choices=c("no", "vcg"))
+                        choices=c("no", "vcg", "cgal"))
 
     ## arguments for smoothing methods
-    args_remesh <- list(vcg=c("type", "iteration", "lambda", "mu", "delta"))
+    args_remesh <- list(vcg=c("type", "iteration", "lambda", "mu", "delta"),
+                        cgal=c("nIter", "time"))
 
     dotsL     <- list(...)
     dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
@@ -48,6 +49,9 @@ smooth_mesh <- function(x, method=c("No", "VCG"), ...) {
         argL       <- c(list(mesh=x_rgl), dotsL_sub)
         mesh_rgl_r <- do.call(vcgSmooth, argL)
         makeMeshValid(mesh_rgl_r)
+    } else if(method == "cgal") {
+        argL   <- c(list(x=x), dotsL_sub)
+        mesh_r <- do.call(smoothShape, argL)
     } else if(method == "no") {
         x
     }
@@ -109,14 +113,14 @@ read_mesh_one <- function(x,
                           fix_issues =TRUE,
                           reconstruct=c("No", "AFS", "SSS", "Poisson",
                                         "Ball_Pivoting", "Alpha_Wrap"),
-                          smooth     =c("No", "VCG"),
+                          smooth     =c("No", "VCG", "CGAL"),
                           remesh     =c("No", "Isotropic"),
                           ...) {
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
 
     smooth <- match.arg(tolower(smooth),
-                        choices=c("no", "vcg"))
+                        choices=c("no", "vcg", "cgal"))
 
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson",
@@ -137,7 +141,8 @@ read_mesh_one <- function(x,
                        "removeMethod",
                        "fillHoles",
                        "fairHole",
-                       "maxNumHoles")
+                       "maxNumHoles",
+                       "verbose")
 
     mesh_name <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -146,9 +151,7 @@ read_mesh_one <- function(x,
     }
 
     # mesh_raw <- readMeshFile(x)
-    dotsL_makeMesh <- c(list(# vertices   =mesh_raw[["vertices"]],
-                             # faces      =mesh_raw[["faces"]],
-                             x          =x,
+    dotsL_makeMesh <- c(list(x          =x,
                              triangulate=TRUE,
                              repairSoup =fix_issues,
                              normals    =FALSE),
@@ -159,11 +162,11 @@ read_mesh_one <- function(x,
     if(!hasName(dotsL_makeMesh, "removeIntersections")) {
         dotsL_makeMesh$removeIntersections <- TRUE
     }
-    
+
     if(!hasName(dotsL_makeMesh, "fillHoles")) {
         dotsL_makeMesh$fillHoles <- TRUE
     }
-    
+
     if( hasName(dotsL_makeMesh, "fillHoles") &&
        !hasName(dotsL_makeMesh, "maxNumHoles")) {
         dotsL_makeMesh$maxNumHoles <- 10L
@@ -212,7 +215,7 @@ read_mesh_obs <- function(x,
                           fix_issues =TRUE,
                           reconstruct=c("No", "AFS", "SSS", "Poisson",
                                         "Ball_Pivoting", "Alpha_Wrap"),
-                          smooth     =c("No", "VCG"),
+                          smooth     =c("No", "VCG", "CGAL"),
                           remesh     =c("No", "Isotropic"),
                           ...) {
     reconstruct <- match.arg(tolower(reconstruct),
@@ -220,7 +223,7 @@ read_mesh_obs <- function(x,
                                        "ball_pivoting", "alpha_wrap"))
 
     smooth <- match.arg(tolower(smooth),
-                        choices=c("no", "vcg"))
+                        choices=c("no", "vcg", "cgal"))
 
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
@@ -249,7 +252,7 @@ read_mesh <- function(x,
                       fix_issues =TRUE,
                       reconstruct=c("No", "AFS", "SSS", "Poisson",
                                     "Ball_Pivoting", "Alpha_Wrap"),
-                      smooth     =c("No", "VCG"),
+                      smooth     =c("No", "VCG", "CGAL"),
                       remesh     =c("No", "Isotropic"),
                       ...) {
     reconstruct <- match.arg(tolower(reconstruct),
@@ -257,7 +260,7 @@ read_mesh <- function(x,
                                        "ball_pivoting", "alpha_wrap"))
 
     smooth <- match.arg(tolower(smooth),
-                        choices=c("no", "vcg"))
+                        choices=c("no", "vcg", "cgal"))
 
     remesh <- match.arg(tolower(remesh),
                         choices=c("no", "isotropic"))
@@ -362,168 +365,31 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
     setNames(ll, pair_names)
 }
 
-## union and intersection for list of two meshes x
-get_mesh_ui_pair <- function(x) {
-    m1 <- x[["mesh_1"]][["mesh"]]
-    m2 <- x[["mesh_2"]][["mesh"]]
-    m_union     <- try(boolUnion(       list(m1, m2), repairSoup=TRUE))
-    m_intersect <- try(boolIntersection(list(m1, m2), repairSoup=TRUE))
-    ui_ok       <- !(inherits(m_union,     "try-error") ||
-                     inherits(m_intersect, "try-error"))
-
-    if(ui_ok) {
-        ## intersection might be empty
-        if(!((nrow(m_union[["faces"]])     > 0L) &&
-             (nrow(m_intersect[["faces"]]) > 0L))) {
-            ui_ok <- FALSE
-        }
-    }
-
-    if(!ui_ok) {
-        m_union     <- NULL
-        m_intersect <- NULL
-        vol_u       <- NA_real_
-        vol_i       <- NA_real_
-    } else {
-        if(doesSelfIntersect(m_union)) {
-            m_union <- removeSelfIntersections(m_union, method="auto_snap")
-        }
-
-        if(doesSelfIntersect(m_intersect)) {
-            m_intersect <- removeSelfIntersections(m_intersect, method="auto_snap")
-        }
-
-        vol_u_0 <- try(getVolume(m_union))
-        vol_i_0 <- try(getVolume(m_intersect))
-
-        if(inherits(vol_u_0, "try-error") || (vol_u_0 <= 0) || is.na(vol_u_0) ||
-           inherits(vol_i_0, "try-error") || (vol_i_0 <= 0) || is.na(vol_i_0)) {
-            if(!doesBoundVolume(m_union)) {
-                m_union <- orientToBoundVolume(m_union)
-            }
-
-            if(!doesBoundVolume(m_intersect)) {
-                m_intersect <- orientToBoundVolume(m_intersect)
-            }
-
-            vol_u_0 <- getVolume(m_union)
-            vol_i_0 <- getVolume(m_intersect)
-        }
-
-        if(is.na(vol_u_0)                         ||
-           is.na(vol_i_0)                         ||
-           (vol_u_0 <= 0)                         ||
-           (vol_i_0 <= 0)                         ||
-           (vol_u_0 <= x[["mesh_1"]][["volume"]]) ||
-           (vol_u_0 <= x[["mesh_2"]][["volume"]])) {
-            warning("Union / intersection volume could not be determined")
-            vol_u <- NA_real_
-            vol_i <- NA_real_
-        } else {
-            vol_u <- vol_u_0
-            vol_i <- vol_i_0
-        }
-    }
-
-    list(name        =x[["name"]],
-         union       =m_union,
-         intersection=m_intersect,
-         vol_u       =vol_u,
-         vol_i       =vol_i)
-}
-
-get_mesh_ui <- function(x) {
-    pairL <- get_mesh_pairs(x)
-    Map(get_mesh_ui_pair, pairL)
-}
-
-get_mesh_metro_pair <- function(x, chop=TRUE, ...) {
-    metro <- vcgMetro(toRGL(x[["mesh_1"]][["mesh"]]),
-                      toRGL(x[["mesh_2"]][["mesh"]]),
-                      ...)
-
-    if(chop) {
-        metro[["distances1"]]    <- NULL
-        metro[["distances2"]]    <- NULL
-        metro[["forward_hist"]]  <- NULL
-        metro[["backward_hist"]] <- NULL
-    }
-
-    metro[["mesh_1"]] <- metro[["mesh1"]]
-    metro[["mesh_2"]] <- metro[["mesh2"]]
-    metro[["mesh1"]]  <- NULL
-    metro[["mesh2"]]  <- NULL
-    metro[["name"]]   <- x[["name"]]
-    metro[["group"]]  <- x[["group"]]
-    metro
-}
-
-get_mesh_metro <- function(x, chop=TRUE, ...) {
-    pairL <- get_mesh_pairs(x)
-    Map(get_mesh_metro_pair, pairL, chop=chop, ...)
-}
-
 ## distance measures, union, intersection for each mesh pair
-get_mesh_agree_pair <- function(x, metro, ui, do_ui=FALSE, chop=TRUE, ...) {
-    ## distance-based measures
-    if(missing(metro)) {
-        metro <- get_mesh_metro_pair(x, chop=chop, ...)
-    }
-
+get_mesh_agree_pair <- function(x, do_ui=FALSE, ...) {
     DCOM  <- sqrt(sum((x[["mesh_2"]][["centroid"]] -
                        x[["mesh_1"]][["centroid"]])^2))
-    HD_fw <- metro[["ForwardSampling"]][["maxdist"]]
-    HD_bw <- metro[["BackwardSampling"]][["maxdist"]]
-    # HD_fw <- MeshUtils::getHausdorffDistance(x[["mesh_1"]][["mesh"]],
-    #                                          x[["mesh_2"]][["mesh"]],
-    #                                          symmetric=FALSE,
-    #                                          errorBound=0.001)
-    # 
-    # HD_bw <- MeshUtils::getHausdorffDistance(x[["mesh_2"]][["mesh"]],
-    #                                          x[["mesh_1"]][["mesh"]],
-    #                                          symmetric=FALSE,
-    #                                          errorBound=0.001)
-    
-    if(is.finite(HD_fw) && is.finite(HD_bw)) {
-        HD_max <- max(c(HD_fw, HD_bw))
-        HD_avg <- (HD_fw + HD_bw) / 2
-    } else {
-        HD_max <- NA_real_
-        HD_avg <- NA_real_
-    }
+    HD <- MeshUtils::getHausdorff(x[["mesh_1"]][["mesh"]],
+                                  x[["mesh_2"]][["mesh"]],
+                                  symmetric=TRUE,
+                                  errorBound=0.001)
 
-    ## average surface distance based on weighted average of sampled distances
-    ## not on actual vertex distances as stored in distances1, distances2
-    n1 <- metro[["ForwardSampling"]][["nsamples"]]
-    n2 <- metro[["BackwardSampling"]][["nsamples"]]
-    if((n1 > 0L) && (n2 > 0L)) {
-        w1   <- n1 / (n1+n2)
-        w2   <- n2 / (n1+n2)
-        ASD  <-      w1* metro[["ForwardSampling"]][["meandist"]]   +
-                     w2* metro[["BackwardSampling"]][["meandist"]]
-        RMSD <- sqrt(w1*(metro[["ForwardSampling"]][["RMSdist"]]^2) +
-                     w2*(metro[["BackwardSampling"]][["RMSdist"]]^2))
-    } else {
-        ASD  <- NA_real_
-        RMSD <- NA_real_
-    }
+    surf_dist <- MeshUtils::getSurfaceDist(x[["mesh_1"]][["mesh"]],
+                                           x[["mesh_2"]][["mesh"]],
+                                           symmetric=TRUE,
+                                           p=0.95)
+    HD95 <- surf_dist[["HDq"]]
+    ASSD <- surf_dist[["ASSD"]]
+    RMSE <- surf_dist[["RMSE"]]
 
     ## volume-overlap-based measures
-    ## check if union/intersection are supplied
-    if(missing(ui) && do_ui) {
-        ui <- get_mesh_ui_pair(x)
-    }
-
-    vol_1 <- x[["mesh_1"]][["volume"]]
-    vol_2 <- x[["mesh_2"]][["volume"]]
-
-    if(do_ui && !is.null(ui) && !is.null(ui[["union"]]) && !is.null(ui[["intersection"]])) {
-        vol_u <- ui[["vol_u"]]
-        vol_i <- ui[["vol_i"]]
-        JSC   <-   vol_i / vol_u
-        DSC   <- 2*vol_i / (vol_1 + vol_2)
-
-        ## TODO TP, FP, TN, FN
+    if(do_ui) {
+        vol_ui <- MeshUtils::getJSCDSC(x[["mesh_1"]][["mesh"]],
+                                       x[["mesh_2"]][["mesh"]])
+        vol_i <- vol_ui[["VolI"]]
+        vol_u <- vol_ui[["VolU"]]
+        JSC   <- vol_ui[["JSC"]]
+        DSC   <- vol_ui[["DSC"]]
     } else {
         vol_u <- NA_real_
         vol_i <- NA_real_
@@ -534,34 +400,22 @@ get_mesh_agree_pair <- function(x, metro, ui, do_ui=FALSE, chop=TRUE, ...) {
     data.frame(mesh_1=x[["mesh_1"]][["name"]],
                mesh_2=x[["mesh_2"]][["name"]],
                group =x[["group"]],
-               vol_1 =vol_1,
-               vol_2 =vol_2,
                vol_u =vol_u,
                vol_i =vol_i,
                DCOM  =DCOM,
-               HD_max=HD_max,
-               HD_avg=HD_avg,
-               ASD   =ASD,
-               RMSD  =RMSD,
+               HD    =HD,
+               HD95  =HD95,
+               ASSD  =ASSD,
+               RMSE  =RMSE,
                JSC   =JSC,
                DSC   =DSC)
 }
 
-get_mesh_agree <- function(x, do_ui=FALSE, chop=TRUE, ...) {
+get_mesh_agree <- function(x, do_ui=FALSE, ...) {
     pairL  <- get_mesh_pairs(x)
-    metroL <- Map(get_mesh_metro_pair, pairL, chop=chop, ...)
-    uiL    <- if(do_ui) {
-        Map(get_mesh_ui_pair, pairL)
-    } else {
-        list(NULL)
-    }
-
     agreeL <- Map(get_mesh_agree_pair,
                   pairL,
-                  metro=metroL,
-                  ui   =uiL,
-                  do_ui=do_ui,
-                  chop =chop)
+                  do_ui=do_ui)
 
     d <- do.call(rbind, agreeL)
     rownames(d) <- NULL
@@ -570,10 +424,10 @@ get_mesh_agree <- function(x, do_ui=FALSE, chop=TRUE, ...) {
 
 get_mesh_agree_long <- function(x) {
     vars_varying <- c("DCOM",
-                      "HD_max", "HD_avg", "ASD", "RMSD",
+                      "HD", "HD95", "ASSD", "RMSE",
                       "vol_u", "vol_i",
                       "JSC", "DSC")
-
+    ## TODO add vol_1, vol_2 above?
     ## this does not work as vol_* variables may be missing,
     ## leading to missing values for ID variable created in
     ## reshapeLong()

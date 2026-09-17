@@ -210,6 +210,8 @@ shiny::shinyApp(
                             alwrap_alphaRel        <- NULL
                             alwrap_offsetRel       <- NULL
                             #
+                            smooth_nIter           <- NULL
+                            smooth_time            <- NULL
                             smooth_type            <- NULL
                             smooth_iter            <- NULL
                             smooth_lambda          <- NULL
@@ -248,8 +250,6 @@ shiny::shinyApp(
                                         k <- round(input$read_mesh_reconstruct_pois_normals)
                                         stopifnot(k >= 2)
                                         k
-                                    } else if(pois_normalsMethod == "VCG") {
-                                        NULL
                                     } else {
                                         stop("Invalid Poisson normals method")
                                     }
@@ -279,13 +279,18 @@ shiny::shinyApp(
 
                             if(!is.null(input$read_mesh_smooth) &&
                                (input$read_mesh_smooth != "No")) {
-                                smooth_type <- input$read_mesh_smooth_type
-                                smooth_iter <- input$read_mesh_smooth_iter
-                                if(input$read_mesh_smooth_type == "taubin") {
-                                    smooth_lambda <- input$read_mesh_smooth_taubin_lambda
-                                    smooth_mu     <- input$read_mesh_smooth_taubin_mu
-                                } else if(input$read_mesh_smooth_type == "fujiLaplace") {
-                                    smooth_delta  <- input$read_mesh_smooth_fujilaplace_delta
+                                if(input$read_mesh_smooth == "VCG") {
+                                    smooth_type <- input$read_mesh_smooth_type
+                                    smooth_iter <- input$read_mesh_smooth_iter
+                                    if(input$read_mesh_smooth_type == "taubin") {
+                                        smooth_lambda <- input$read_mesh_smooth_taubin_lambda
+                                        smooth_mu     <- input$read_mesh_smooth_taubin_mu
+                                    } else if(input$read_mesh_smooth_type == "fujiLaplace") {
+                                        smooth_delta  <- input$read_mesh_smooth_fujilaplace_delta
+                                    }
+                                } else if(input$read_mesh_smooth == "CGAL") {
+                                    smooth_nIter <- input$read_mesh_smooth_nIter
+                                    smooth_time  <- input$read_mesh_smooth_time
                                 }
                             }
 
@@ -330,6 +335,9 @@ shiny::shinyApp(
                                          #
                                          alphaRel       =alwrap_alphaRel,
                                          offsetRel      =alwrap_offsetRel,
+                                         #
+                                         nIter          =smooth_nIter,
+                                         time           =smooth_time,
                                          #
                                          type           =smooth_type,
                                          iteration      =smooth_iter,
@@ -402,7 +410,6 @@ shiny::shinyApp(
                 }
 
                 argL <- list(meshL,
-                             chop        =TRUE,
                              silent      =FALSE,
                              colormeshes =TRUE,
                              nSamples    =nSamples,
@@ -480,9 +487,27 @@ shiny::shinyApp(
             if((input$meshes_input_source == "file")) {
                 radioButtons("read_mesh_smooth",
                              "Smoothing method",
-                             choices=c("None"="No", "VCG"="VCG"),
+                             choices=c("None"="No", "VCG"="VCG", "CGAL"="CGAL"),
                              selected="No",
                              inline=TRUE)
+            } else {
+                NULL
+            }
+        })
+        output$ui_smooth_cgal_opts <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_smooth)      &&
+               (input$read_mesh_smooth == "CGAL")) {
+                tagList(numericInput("read_mesh_smooth_nIter",
+                                     "Number of iterations",
+                                     min=1L,
+                                     value=10L,
+                                     step=1L),
+                        numericInput("read_mesh_smooth_time",
+                                     "Time step",
+                                     min=0.00000001,
+                                     value=0.01,
+                                     step=0.01))
             } else {
                 NULL
             }
@@ -654,8 +679,8 @@ shiny::shinyApp(
                (input$read_mesh_reconstruct == "Poisson")) {
                 tagList(radioButtons("read_mesh_reconstruct_pois_normethod",
                                      "Normals method",
-                                     choices=c("VCG", "Jet", "PCA"),
-                                     selected="VCG",
+                                     choices=c("Jet", "PCA"),
+                                     selected="Jet",
                                      inline=TRUE),
                         radioButtons("read_mesh_reconstruct_pois_spmethod",
                                      "Spacing: Average or numeric",
@@ -667,22 +692,18 @@ shiny::shinyApp(
             }
         })
         output$ui_reconstruct_pois_opts <- renderUI({
-            if(!is.null(input$meshes_input_source)               &&
-               !is.null(input$read_mesh_reconstruct)             &&
-               (input$meshes_input_source   == "file")           &&
-               (input$read_mesh_reconstruct == "Poisson")        &&
+            if(!is.null(input$meshes_input_source)                  &&
+               !is.null(input$read_mesh_reconstruct)                &&
+               (input$meshes_input_source   == "file")              &&
+               (input$read_mesh_reconstruct == "Poisson")           &&
                !is.null(input$read_mesh_reconstruct_pois_normethod) &&
                !is.null(input$read_mesh_reconstruct_pois_spmethod)) {
 
-                ui_pois_normals <- if(input$read_mesh_reconstruct_pois_normethod == "VCG") {
-                    NULL
-                } else {
-                    numericInput("read_mesh_reconstruct_pois_normals",
-                                 "Normals Parameter",
-                                 min=2L,
-                                 value=12L,
-                                 step=1L)
-                }
+                ui_pois_normals <- numericInput("read_mesh_reconstruct_pois_normals",
+                                                "Normals Parameter",
+                                                min=2L,
+                                                value=12L,
+                                                step=1L)
                 ui_pois_spacing <- if(input$read_mesh_reconstruct_pois_spmethod == "avg") {
                     NULL
                 } else {
@@ -774,10 +795,10 @@ shiny::shinyApp(
             }
         })
         output$ui_reconstruct_afs_jetsm_int <- renderUI({
-            if(!is.null(input$meshes_input_source)               &&
-               !is.null(input$read_mesh_reconstruct)             &&
-               (input$meshes_input_source   == "file")           &&
-               (input$read_mesh_reconstruct == "AFS")            &&
+            if(!is.null(input$meshes_input_source)                  &&
+               !is.null(input$read_mesh_reconstruct)                &&
+               (input$meshes_input_source   == "file")              &&
+               (input$read_mesh_reconstruct == "AFS")               &&
                !is.null(input$read_mesh_reconstruct_afs_jetsm_bool) &&
                (input$read_mesh_reconstruct_afs_jetsm_bool)) {
                 numericInput("read_mesh_reconstruct_afs_jetsm_int",
