@@ -599,6 +599,9 @@ shiny::shinyApp(
                         #              min=1L,
                         #              value=1L,
                         #              step=1L),
+                        # checkboxInput("read_mesh_remesh_protect",
+                        #               "Protect constraints?",
+                        #               value=TRUE),
                         checkboxInput("read_mesh_remesh_iso_adapt",
                                       "Enable adaptive remeshing?",
                                       value=FALSE)
@@ -925,7 +928,7 @@ shiny::shinyApp(
         })
         output$rgl_view_metro <- renderUI({
             checkboxInput("rgl_view_metro",
-                          "Show color wash indicating differences (may take long for large meshes)",
+                          "Show color wash indicating surface distance (may take long for large meshes)",
                           value=FALSE)
         })
         output$rgl_mesh1_name <- renderUI({
@@ -948,7 +951,7 @@ shiny::shinyApp(
                 if(!is.null(d_agree_pairW)) {
                     d_agree_pairW[["vol_i"]] <- NULL
                     d_agree_pairW[["vol_u"]] <- NULL
-                    
+
                     cols_numeric <- unname(which(vapply(d_agree_pairW, is.numeric, logical(1))))
                     DT_out <- DT::datatable(d_agree_pairW,
                                             extensions="Buttons",
@@ -1030,7 +1033,7 @@ shiny::shinyApp(
                 mesh  <- pairL[[view_select]][["mesh_1"]]
                 if(!is.null(mesh)) {
                     try(close3d())
-                    wire3d(MeshUtils::toRGL(mesh[["mesh"]]))
+                    wire3d(SurfaceMesh::toRGL(mesh[["mesh"]]))
                     rglwidget()
                 } else {
                     NULL
@@ -1047,7 +1050,7 @@ shiny::shinyApp(
                 mesh  <- pairL[[view_select]][["mesh_2"]]
                 if(!is.null(mesh)) {
                     try(close3d())
-                    wire3d(MeshUtils::toRGL(mesh[["mesh"]]))
+                    wire3d(SurfaceMesh::toRGL(mesh[["mesh"]]))
                     rglwidget()
                 } else {
                     NULL
@@ -1081,7 +1084,7 @@ shiny::shinyApp(
             if(!is.null(input$rgl_view_metro) && input$rgl_view_metro) {
                 metroL      <- react_mesh_metro()
                 view_select <- input$rgl_view_select
-                
+
                 if(!is.null(metroL) && !is.null(view_select)) {
                     metro <- metroL[[view_select]]
                     if(!is.null(metro)) {
@@ -1098,7 +1101,7 @@ shiny::shinyApp(
                 NULL
             }
         })
-        
+
         output$rgl_mesh_dist <- renderUI({
             if(!is.null(input$rgl_view_metro) && input$rgl_view_metro) {
                 fluidRow(

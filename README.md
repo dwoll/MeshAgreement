@@ -20,7 +20,7 @@ See [dkfz metrics reloaded](https://metrics-reloaded.dkfz.de/) for extensive dis
 
 # Required packages
 
-`MeshAgreement` relies heavily on functionalilty originally developed by [Stéphane Laurent](https://github.com/stla/) which was later adapted to package [`MeshUtils`](https://github.com/dwoll/MeshUtils). The back-end is provided by package [`RcppCGAL`](https://github.com/ericdunipace/RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry and by package [`Rvcg`](https://CRAN.R-project.org/package=Rvcg) for the [VCG](http://www.vcglib.net/) library. For the Shiny GUI, the following packages are required, as well:
+`MeshAgreement` relies heavily on functionalilty originally developed by [Stéphane Laurent](https://github.com/stla/) which was later adapted to package [`SurfaceMesh`](https://github.com/dwoll/SurfaceMesh). The back-end is provided by package [`RcppCGAL`](https://github.com/ericdunipace/RcppCGAL) to enable the functionality from the [CGAL](https://www.cgal.org/) library for computational geometry and by package [`Rvcg`](https://CRAN.R-project.org/package=Rvcg) for the [VCG](http://www.vcglib.net/) library. For the Shiny GUI, the following packages are required, as well:
 
   * [`shiny`](https://CRAN.R-project.org/package=shiny)
   * [`bs4Dash`](https://CRAN.R-project.org/package=bs4Dash)

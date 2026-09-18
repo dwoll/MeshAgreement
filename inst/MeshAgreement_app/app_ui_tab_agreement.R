@@ -26,8 +26,8 @@ fluidPage(
                 collapsible=TRUE,
                 collapsed=TRUE,
                 p("For the definition of the following options, see the",
-                  tags$a(href="https://github.com/dwoll/MeshUtils/blob/main/R/hausdorff.R",
-                         "documentation of the MeshUtils::getSurfaceDist() function")),
+                  tags$a(href="https://github.com/dwoll/SurfaceMesh/blob/main/R/hausdorff.R",
+                         "documentation of the SurfaceMesh::getSurfaceDist() function")),
                 uiOutput("ui_mesh_agree_metro_options")
             )
         )

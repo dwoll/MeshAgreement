@@ -8,7 +8,7 @@ importFrom(stats,
            var)
 importFrom(tools, file_path_sans_ext)
 importFrom(utils, combn, hasName)
-importFrom(MeshUtils,
+importFrom(SurfaceMesh,
            alphaWrap,
            doesSelfIntersect, doesBoundVolume,
            fillBoundaryHoles,

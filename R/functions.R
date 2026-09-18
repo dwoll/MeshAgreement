@@ -369,14 +369,14 @@ get_mesh_metro_pair <- function(x, chop=TRUE, ...) {
     metro <- vcgMetro(toRGL(x[["mesh_1"]][["mesh"]]),
                       toRGL(x[["mesh_2"]][["mesh"]]),
                       ...)
-    
+
     if(chop) {
         metro[["distances1"]]    <- NULL
         metro[["distances2"]]    <- NULL
         metro[["forward_hist"]]  <- NULL
         metro[["backward_hist"]] <- NULL
     }
-    
+
     metro[["mesh_1"]] <- metro[["mesh1"]]
     metro[["mesh_2"]] <- metro[["mesh2"]]
     metro[["mesh1"]]  <- NULL
@@ -395,12 +395,12 @@ get_mesh_metro <- function(x, chop=TRUE, ...) {
 get_mesh_agree_pair <- function(x, do_ui=FALSE, ...) {
     DCOM  <- sqrt(sum((x[["mesh_2"]][["centroid"]] -
                        x[["mesh_1"]][["centroid"]])^2))
-    HD <- MeshUtils::getHausdorff(x[["mesh_1"]][["mesh"]],
+    HD <- SurfaceMesh::getHausdorff(x[["mesh_1"]][["mesh"]],
                                   x[["mesh_2"]][["mesh"]],
                                   symmetric=TRUE,
                                   errorBound=0.001)
 
-    surf_dist <- MeshUtils::getSurfaceDist(x[["mesh_1"]][["mesh"]],
+    surf_dist <- SurfaceMesh::getSurfaceDist(x[["mesh_1"]][["mesh"]],
                                            x[["mesh_2"]][["mesh"]],
                                            symmetric=TRUE,
                                            p=0.95)
@@ -410,7 +410,7 @@ get_mesh_agree_pair <- function(x, do_ui=FALSE, ...) {
 
     ## volume-overlap-based measures
     if(do_ui) {
-        vol_ui <- MeshUtils::getJSCDSC(x[["mesh_1"]][["mesh"]],
+        vol_ui <- SurfaceMesh::getJSCDSC(x[["mesh_1"]][["mesh"]],
                                        x[["mesh_2"]][["mesh"]])
         vol_i <- vol_ui[["VolI"]]
         vol_u <- vol_ui[["VolU"]]

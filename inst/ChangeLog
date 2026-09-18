@@ -1,9 +1,9 @@
-$Date: 2026-07-20 10:27:29 +0000 (Mon, 20 Jul 2026) $
+$Date: 2026-09-20 10:27:29 +0000 (Sun, 20 Sep 2026) $
 
 MESHAGREEMENT RELEASE VERSIONS at https://cran.r-project.org/
 
-Version 0.1.6 (July 20, 2026)
-    * Adapt all functions to use package CGALmeshops, a fork
+Version 0.1.6 (September 20, 2026)
+    * Adapt functions to use package SurfaceMesh, a fork
       and adaptation of packges Boov, PolygonSoup, and cgalMeshes
       developed by Stéphane Laurent
 
