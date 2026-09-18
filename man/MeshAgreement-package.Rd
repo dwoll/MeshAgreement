@@ -6,14 +6,13 @@
 \description{
 Calculates distance-based and volume-overlap-based
 agreement measures for triangular 3D meshes. These include
-the Hausdorff distance (including HD95),
-the average surface distance, the
-Dice similarity coefficient, and the Jaccard similarity
-coefficient as documented in Stockinger et al. (2021)
-<doi:10.1186/s13014-021-01965-5>. Overall agreement for
-a set of meshes is calculated as the aggregate agreement
-for all pairwise comparisons. Based on algorithms
-provided by the 'VCGLIB' <http://vcglib.net/>
+the Hausdorff distance (including HD95), the average
+surface distance, the Dice similarity coefficient, and the
+Jaccard similarity coefficient as documented in Stockinger
+et al. (2021) <doi:10.1186/s13014-021-01965-5>.
+Overall agreement for a set of meshes is calculated as the
+aggregate agreement for all pairwise comparisons. Based on
+algorithms provided by the 'VCGLIB' <http://vcglib.net/>
 and 'CGAL' <https://www.cgal.org/> libraries.
 Includes web-based graphical user interface.
 }
@@ -21,8 +20,8 @@ Includes web-based graphical user interface.
 \tabular{ll}{
 Package: \tab MeshAgreement\cr
 Type: \tab Package\cr
-Version: \tab 0.1.4\cr
-Date: \tab 2022-11-25\cr
+Version: \tab 0.1.6\cr
+Date: \tab 2026-09-18\cr
 License: \tab GPL (>= 2)\cr
 }
 }
@@ -32,7 +31,7 @@ Daniel Wollschlaeger and Heiko Karle
 Maintainer: Daniel Wollschlaeger <wollschlaeger@uni-mainz.de>
 }
 \references{
-Maier-Hein et al. Metrics reloaded: recommendations for image analysis validation. Nat Methods 2024; 21: 195–212.
+Maier-Hein et al. Metrics reloaded: recommendations for image analysis validation. Nat Methods 2024; 21: 195-212.
 
 Fotina et al. Critical discussion of evaluation parameters for inter-observer variability in target definition for radiation therapy. Strahlenther Onkol 2012; 188: 160-167.
 

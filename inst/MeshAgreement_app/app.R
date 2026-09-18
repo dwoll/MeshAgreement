@@ -423,32 +423,23 @@ shiny::shinyApp(
                              from        =input$vcgMetro_from,
                              to          =input$vcgMetro_to)
 
-                do.call("get_mesh_metro", Filter(Negate(is.null), argL))
+                do.call(get_mesh_metro, Filter(Negate(is.null), argL))
             } else {
                 NULL
             }
         })
         ## list of pairwise meshes
         react_mesh_agree <- reactive({
-            meshL  <- react_file_sel_sorted()
-            metroL <- react_mesh_metro()
-            uiL    <- if(!is.null(input$mesh_agree_do_ui) && input$mesh_agree_do_ui) {
-                react_mesh_ui()
-            } else {
-                list(NULL)
-            }
-
-            if(!is.null(meshL) && !is.null(metroL)) {
+            meshL <- react_file_sel_sorted()
+            if(!is.null(meshL)) {
                 do_ui       <- !is.null(input$mesh_agree_do_ui) && input$mesh_agree_do_ui
                 mesh_pairL  <- get_mesh_pairs(meshL)
                 agree_pairL <- Map(get_mesh_agree_pair,
                                    mesh_pairL,
-                                   metro=metroL,
-                                   ui   =uiL,
                                    do_ui=do_ui)
 
-                d <- do.call("rbind", agree_pairL)
-                rownames(d) <- NULL
+                d <- do.call(rbind, agree_pairL)
+                rownames(d)  <- NULL
                 d
             } else {
                 NULL
@@ -458,7 +449,7 @@ shiny::shinyApp(
             tagList(p("Volume-overlap based metrics (DSC, JSC) take more time to compute than distance-based metrics."),
                     checkboxInput("mesh_agree_do_ui",
                                   "Calculate DSC, JSC",
-                                  value=TRUE))
+                                  value=FALSE))
         })
         output$ui_select_comparisons <- renderUI({
             if(input$meshes_sel_mode == "indiv") {
@@ -932,6 +923,11 @@ shiny::shinyApp(
                 NULL
             }
         })
+        output$rgl_view_metro <- renderUI({
+            checkboxInput("rgl_view_metro",
+                          "Show color wash indicating differences (may take long for large meshes)",
+                          value=FALSE)
+        })
         output$rgl_mesh1_name <- renderUI({
             p(get_name_elem(input$rgl_view_select, pos=1L))
         })
@@ -950,6 +946,9 @@ shiny::shinyApp(
                 d_agree_pairW <- react_mesh_agree()
 
                 if(!is.null(d_agree_pairW)) {
+                    d_agree_pairW[["vol_i"]] <- NULL
+                    d_agree_pairW[["vol_u"]] <- NULL
+                    
                     cols_numeric <- unname(which(vapply(d_agree_pairW, is.numeric, logical(1))))
                     DT_out <- DT::datatable(d_agree_pairW,
                                             extensions="Buttons",
@@ -983,6 +982,8 @@ shiny::shinyApp(
 
             if(!is.null(d_agree_pairW)) {
                 d_agree_pairL <- get_mesh_agree_long(d_agree_pairW)
+                idx_out <- d_agree_pairL[["metric"]] %in% c("vol_u", "vol_i")
+                d_agree_pairL <- d_agree_pairL[!idx_out, , drop=FALSE]
                 d_agree_pairL[["pair"]] <- paste(d_agree_pairL[["mesh_1"]],
                                                  d_agree_pairL[["mesh_2"]],
                                                  sep=" <-> ")
@@ -1055,16 +1056,20 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$rgl_mesh_dist1 <- renderRglwidget({
-            metroL      <- react_mesh_metro()
-            view_select <- input$rgl_view_select
+        output$rgl_mesh_dist1_widget <- renderRglwidget({
+            if(!is.null(input$rgl_view_metro) && input$rgl_view_metro) {
+                metroL      <- react_mesh_metro()
+                view_select <- input$rgl_view_select
 
-            if(!is.null(metroL) && !is.null(view_select)) {
-                metro <- metroL[[view_select]]
-                if(!is.null(metro)) {
-                    try(close3d())
-                    shade3d(metro[["mesh_1"]])
-                    rglwidget()
+                if(!is.null(metroL) && !is.null(view_select)) {
+                    metro <- metroL[[view_select]]
+                    if(!is.null(metro)) {
+                        try(close3d())
+                        shade3d(metro[["mesh_1"]])
+                        rglwidget()
+                    } else {
+                        NULL
+                    }
                 } else {
                     NULL
                 }
@@ -1072,19 +1077,54 @@ shiny::shinyApp(
                 NULL
             }
         })
-        output$rgl_mesh_dist2 <- renderRglwidget({
-            metroL      <- react_mesh_metro()
-            view_select <- input$rgl_view_select
-
-            if(!is.null(metroL) && !is.null(view_select)) {
-                metro <- metroL[[view_select]]
-                if(!is.null(metro)) {
-                    try(close3d())
-                    shade3d(metro[["mesh_2"]])
-                    rglwidget()
+        output$rgl_mesh_dist2_widget <- renderRglwidget({
+            if(!is.null(input$rgl_view_metro) && input$rgl_view_metro) {
+                metroL      <- react_mesh_metro()
+                view_select <- input$rgl_view_select
+                
+                if(!is.null(metroL) && !is.null(view_select)) {
+                    metro <- metroL[[view_select]]
+                    if(!is.null(metro)) {
+                        try(close3d())
+                        shade3d(metro[["mesh_2"]])
+                        rglwidget()
+                    } else {
+                        NULL
+                    }
                 } else {
                     NULL
                 }
+            } else {
+                NULL
+            }
+        })
+        
+        output$rgl_mesh_dist <- renderUI({
+            if(!is.null(input$rgl_view_metro) && input$rgl_view_metro) {
+                fluidRow(
+                    column(
+                        width=6,
+                        box(title=htmlOutput("rgl_dist1_name"),
+                            width=12,
+                            status=NULL,
+                            closable=FALSE,
+                            maximizable=FALSE,
+                            collapsible=FALSE,
+                            rglwidgetOutput("rgl_mesh_dist1_widget")
+                        )
+                    ),
+                    column(
+                        width=6,
+                        box(title=htmlOutput("rgl_dist2_name"),
+                            width=12,
+                            status=NULL,
+                            closable=FALSE,
+                            maximizable=FALSE,
+                            collapsible=FALSE,
+                            rglwidgetOutput("rgl_mesh_dist2_widget")
+                        )
+                    )
+                )
             } else {
                 NULL
             }

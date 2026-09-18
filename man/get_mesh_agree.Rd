@@ -10,7 +10,7 @@ get_mesh_agree(x, do_ui=FALSE, ...)
   \item{do_ui}{\code{logical}. Calculate volume-overlap-based measures from union / intersection volumes. More time intensive than distance-based measures.}
   \item{...}{Options passed to \code{\link[MeshUtils]{getSurfaceDist}}.}
 }
-\details{Currently, no mesh can be designated gold standard. \code{\link[MeshAgreement]{get_mesh_agree_pair}} calculates the agreement for a single pair of meshes. \code{\link[MeshAgreement]{get_mesh_metro}} calculates the distances. \code{\link[MeshAgreement]{get_mesh_ui}} calculates the mesh union and intersection.}
+\details{Currently, no mesh can be designated gold standard. \code{\link[MeshAgreement]{get_mesh_agree_pair}} calculates the agreement for a single pair of meshes. \code{\link[MeshUtils]{getSurfaceDist}} calculates the surface distance metrics. \code{\link[MeshUtils]{getJSCDSC}} calculates the volume-overlap based metrics.}
 \value{
 \code{data.frame} with these variables
 \item{mesh_1}{Name of the first mesh of the pair.}
@@ -29,7 +29,7 @@ get_mesh_agree(x, do_ui=FALSE, ...)
 \item{DSC}{Dice similarity coefficient.}
 }
 \references{
-Maier-Hein et al. Metrics reloaded: recommendations for image analysis validation. Nat Methods 2024; 21: 195–212.
+Maier-Hein et al. Metrics reloaded: recommendations for image analysis validation. Nat Methods 2024; 21: 195-212.
 
 Fotina et al. Critical discussion of evaluation parameters for inter-observer variability in target definition for radiation therapy. Strahlenther Onkol 2012; 188: 160-167.
 
@@ -45,8 +45,7 @@ Sherer et al. Metrics to evaluate the performance of auto-segmentation for radia
 }
 \seealso{
 \code{\link[MeshAgreement]{get_mesh_agree_pair}},
-\code{\link[MeshAgreement]{get_mesh_metro}},
-\code{\link[MeshAgreement]{get_mesh_ui}}
+\code{\link[MeshAgreement]{get_mesh_metro}}
 }
 \examples{
 heartL <- mesh3dL_to_CGALmeshL(data_heart_obsL)

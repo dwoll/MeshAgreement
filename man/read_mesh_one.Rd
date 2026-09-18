@@ -18,7 +18,7 @@
   \item{...}{Options passed to \code{\link[MeshUtils]{reconstructAFS}}, \code{\link[MeshUtils]{reconstructSSS}}, \code{\link[MeshUtils]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[MeshUtils]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF.}
-\value{Mesh object - a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[MeshUtils]{CGALmesh}} object. Use \code{\link[MeshAgreement]{read_mesh}} to read a list of several mesh objects each for several observers. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read a list of several mesh objects each for 1 observer.}
+\value{Mesh object - a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{CGALmesh} object as created by \code{\link[MeshUtils]{makeMesh}}. Use \code{\link[MeshAgreement]{read_mesh}} to read a list of several mesh objects each for several observers. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read a list of several mesh objects each for 1 observer.}
 \seealso{
 \code{\link[MeshUtils]{makeMesh}},
 \code{\link[MeshUtils]{reconstructAFS}},

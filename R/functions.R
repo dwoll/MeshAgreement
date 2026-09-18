@@ -365,6 +365,32 @@ get_mesh_pairs <- function(x, sep=" <-> ", names_only=FALSE) {
     setNames(ll, pair_names)
 }
 
+get_mesh_metro_pair <- function(x, chop=TRUE, ...) {
+    metro <- vcgMetro(toRGL(x[["mesh_1"]][["mesh"]]),
+                      toRGL(x[["mesh_2"]][["mesh"]]),
+                      ...)
+    
+    if(chop) {
+        metro[["distances1"]]    <- NULL
+        metro[["distances2"]]    <- NULL
+        metro[["forward_hist"]]  <- NULL
+        metro[["backward_hist"]] <- NULL
+    }
+    
+    metro[["mesh_1"]] <- metro[["mesh1"]]
+    metro[["mesh_2"]] <- metro[["mesh2"]]
+    metro[["mesh1"]]  <- NULL
+    metro[["mesh2"]]  <- NULL
+    metro[["name"]]   <- x[["name"]]
+    metro[["group"]]  <- x[["group"]]
+    metro
+}
+
+get_mesh_metro <- function(x, chop=TRUE, ...) {
+    pairL <- get_mesh_pairs(x)
+    Map(get_mesh_metro_pair, pairL, chop=chop, ...)
+}
+
 ## distance measures, union, intersection for each mesh pair
 get_mesh_agree_pair <- function(x, do_ui=FALSE, ...) {
     DCOM  <- sqrt(sum((x[["mesh_2"]][["centroid"]] -

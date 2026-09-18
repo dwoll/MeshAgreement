@@ -18,7 +18,7 @@
   \item{...}{Options passed to \code{\link[MeshUtils]{reconstructAFS}}, \code{\link[MeshUtils]{reconstructSSS}}, \code{\link[MeshUtils]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[MeshUtils]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF. For subsequent comparison, the first file from observer 1 will be paired with the first file from observer 2, and so on.}
-\value{\code{list} (each component representing one observer) of \code{list}s of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{\link[MeshUtils]{CGALmesh}} object. Sample object given in \code{\link[MeshAgreement]{data_heart_obsL}}. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read several mesh files from one observer. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
+\value{\code{list} (each component representing one observer) of \code{list}s of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{CGALmesh} object as created by \code{\link[MeshUtils]{makeMesh}}. Sample object given in \code{\link[MeshAgreement]{data_heart_obsL}}. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read several mesh files from one observer. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
 \seealso{
 \code{\link[MeshUtils]{makeMesh}},
 \code{\link[MeshUtils]{reconstructAFS}},
