@@ -6,16 +6,16 @@
           reconstruct=c("No", "AFS", "SSS", "Poisson", "Ball_Pivoting",
                         "Alpha_Wrap"),
           smooth=c("No", "VCG", "CGAL"),
-          remesh=c("No", "Isotropic"),
+          remesh=c("No", "Isotropic", "Simplify"),
           ...)}
 \arguments{
   \item{x}{\code{list} of \code{character} vectors of file names. One vector for the files from one observer.}
   \item{name}{\code{list} of \code{character} vectors of mesh names that should be assigned to the mesh objects. If missing, names are taken from the file names.}
   \item{fix_issues}{\code{logical}. Try to fix mesh issues, such as not being closed, not bounding a volume, or having self-intersections, see \code{\link[SurfaceMesh]{readMeshFile}}.}
   \item{reconstruct}{\code{character}. Surface reconstruction method. \code{"AFS"} uses \code{\link[SurfaceMesh]{reconstructAFS}}. \code{"SSS"} uses \code{\link[SurfaceMesh]{reconstructSSS}}. \code{"Poisson"} uses \code{\link[SurfaceMesh]{reconstructPoisson}}. \code{"Ball_Pivoting"} uses \code{\link[Rvcg]{vcgBallPivoting}}. \code{"Alpha_Wrap"} uses \code{\link[SurfaceMesh]{alphaWrap}}.}
-  \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}, \code{"CGAL"} uses \code{\link[SurfaceMesh]{smoothShape}}.}
-  \item{remesh}{\code{character}. \code{"Isotropic"} uses \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
-  \item{...}{Options passed to \code{\link[SurfaceMesh]{reconstructAFS}}, \code{\link[SurfaceMesh]{reconstructSSS}}, \code{\link[SurfaceMesh]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[SurfaceMesh]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, or \code{\link[Rvcg]{vcgIsotropicRemeshing}}.}
+  \item{smooth}{\code{character}. Smoothing method. \code{"VCG"} uses \code{\link[Rvcg]{vcgSmooth}}, \code{"CGAL"} uses \code{\link[SurfaceMesh]{remeshSmmooth}}.}
+  \item{remesh}{\code{character}. \code{"Isotropic"} uses \code{\link[Rvcg]{vcgIsotropicRemeshing}}, \code{"Simplify"} uses \code{\link[SurfaceMesh]{remeshSimplify}}.}
+  \item{...}{Options passed to \code{\link[SurfaceMesh]{reconstructAFS}}, \code{\link[SurfaceMesh]{reconstructSSS}}, \code{\link[SurfaceMesh]{reconstructPoisson}}, \code{\link[Rvcg]{vcgBallPivoting}}, \code{\link[SurfaceMesh]{alphaWrap}}, \code{\link[Rvcg]{vcgSmooth}}, \code{\link[SurfaceMesh]{remeshSmooth}}, \code{\link[Rvcg]{vcgIsotropicRemeshing}}, or \code{\link[SurfaceMesh]{remeshSimplify}}.}
 }
 \details{Supported file formats: STL, PLY, OBJ, OFF. For subsequent comparison, the first file from observer 1 will be paired with the first file from observer 2, and so on.}
 \value{\code{list} (each component representing one observer) of \code{list}s of mesh objects. Each object is a \code{list} with components \code{name}, \code{mesh}, \code{volume}, \code{centroid}, where \code{mesh} is a \code{CGALmesh} object as created by \code{\link[SurfaceMesh]{makeMesh}}. Sample object given in \code{\link[MeshAgreement]{data_heart_obsL}}. Use \code{\link[MeshAgreement]{read_mesh_obs}} to read several mesh files from one observer. Use \code{\link[MeshAgreement]{read_mesh_one}} to read a single mesh file.}
@@ -25,7 +25,8 @@
 \code{\link[SurfaceMesh]{reconstructSSS}},
 \code{\link[SurfaceMesh]{reconstructPoisson}},
 \code{\link[SurfaceMesh]{alphaWrap}},
-\code{\link[SurfaceMesh]{smoothShape}},
+\code{\link[SurfaceMesh]{remeshSmooth}},
+\code{\link[SurfaceMesh]{remeshSimplify}},
 \code{\link[Rvcg]{vcgBallPivoting}},
 \code{\link[Rvcg]{vcgIsotropicRemeshing}},
 \code{\link[Rvcg]{vcgSmooth}},

@@ -186,6 +186,11 @@ shiny::shinyApp(
                             isorem_Adaptive        <- NULL
                             # isorem_relaxSteps      <- NULL
                             #
+                            simplify_method        <- NULL
+                            simplify_stopUeRatio   <- NULL
+                            simplify_stopUeCount   <- NULL
+                            simplify_policyGH      <- NULL
+                            #
                             afs_jetSmoothing       <- NULL
                             #
                             sss_scaleIterations    <- NULL
@@ -221,12 +226,21 @@ shiny::shinyApp(
                             ## remeshing options
                             if(!is.null(input$read_mesh_remesh) &&
                                (input$read_mesh_remesh != "No")) {
-                                isorem_TargetLen       <- input$read_mesh_remesh_iso_targlen
-                                isorem_FeatureAngleDeg <- input$read_mesh_remesh_iso_fang
-                                isorem_MaxSurfDist     <- input$read_mesh_remesh_iso_msurfdst
-                                isorem_iterations      <- input$read_mesh_remesh_iso_iter
-                                isorem_Adaptive        <- input$read_mesh_remesh_iso_adapt
-                                # isorem_relaxSteps      <- input$read_mesh_remesh_iso_relstep
+                                if(input$read_mesh_remesh == "Isotropic") {
+                                    isorem_TargetLen       <- input$read_mesh_remesh_iso_targlen
+                                    isorem_FeatureAngleDeg <- input$read_mesh_remesh_iso_fang
+                                    isorem_MaxSurfDist     <- input$read_mesh_remesh_iso_msurfdst
+                                    isorem_iterations      <- input$read_mesh_remesh_iso_iter
+                                    isorem_Adaptive        <- input$read_mesh_remesh_iso_adapt
+                                    # isorem_relaxSteps      <- input$read_mesh_remesh_iso_relstep
+                                } else if(input$read_mesh_remesh == "Simplify") {
+                                    simplify_method        <- input$read_mesh_remesh_simpl_method
+                                    simplify_stopUeRatio   <- input$read_mesh_remesh_simpl_ratio
+                                    simplify_stopUeCount   <- input$read_mesh_remesh_simpl_count
+                                    if(!is.null(input$read_mesh_remesh_simpl_policyGH) &&
+                                       (input$read_mesh_remesh_simpl_method == "GH"))
+                                    simplify_policyGH      <- input$read_mesh_remesh_simpl_policyGH
+                                }
                             }
 
                             ## some surface reconstruction requested
@@ -309,7 +323,12 @@ shiny::shinyApp(
                                          iterations     =isorem_iterations,
                                          Adaptive       =isorem_Adaptive,
                                          # relaxSteps     =isorem_relaxSteps,
-                                         #
+                                         ##
+                                         method         =simplify_method,
+                                         stopUeRatio    =simplify_stopUeRatio,
+                                         stopUeCount    =simplify_stopUeCount,
+                                         policyGH       =simplify_policyGH,
+                                         ##
                                          reconstruct    =input$read_mesh_reconstruct,
                                          #
                                          jetSmoothing   =afs_jetSmoothing,
@@ -335,7 +354,7 @@ shiny::shinyApp(
                                          #
                                          alphaRel       =alwrap_alphaRel,
                                          offsetRel      =alwrap_offsetRel,
-                                         #
+                                         ##
                                          nIter          =smooth_nIter,
                                          time           =smooth_time,
                                          #
@@ -563,7 +582,9 @@ shiny::shinyApp(
             if((input$meshes_input_source == "file")) {
                 radioButtons("read_mesh_remesh",
                              "Remesh method",
-                             choices=c("None"="No", "Isotropic"="Isotropic"),
+                             choices=c("None"="No",
+                                       "Isotropic"="Isotropic",
+                                       "Simplify"="Simplify"),
                              selected="No",
                              inline=TRUE)
             } else {
@@ -573,7 +594,7 @@ shiny::shinyApp(
         output$ui_remesh_iso_opts <- renderUI({
             if((input$meshes_input_source == "file") &&
                !is.null(input$read_mesh_remesh)  &&
-               (input$read_mesh_remesh != "No")) {
+               (input$read_mesh_remesh == "Isotropic")) {
                 tagList(numericInput("read_mesh_remesh_iso_targlen",
                                      "Target edge length (lower -> more expensive)",
                                      min=0.01,
@@ -606,6 +627,46 @@ shiny::shinyApp(
                                       "Enable adaptive remeshing?",
                                       value=FALSE)
                         )
+            } else {
+                NULL
+            }
+        })
+        output$ui_remesh_simpl_opts <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_remesh)  &&
+               (input$read_mesh_remesh == "Simplify")) {
+                tagList(radioButtons("read_mesh_remesh_simpl_method",
+                                     "Method",
+                                     list("Lindstrom-Turk ratio"="LT-R",
+                                          "Lindstrom-Turk count"="LT-C",
+                                          "Lindstrom-Turk bounded normal change filter"="LT-BNCF",
+                                          "Garland-Heckbert"="GH")),
+                        numericInput("read_mesh_remesh_simpl_ratio",
+                                     "Undirected edge ratio",
+                                     min=0.001,
+                                     value=0.5,
+                                     step=0.1),
+                        numericInput("read_mesh_remesh_simpl_count",
+                                     "Undirected edge count",
+                                     min=1L,
+                                     value=1L,
+                                     step=1L))
+            } else {
+                NULL
+            }
+        })
+        output$ui_remesh_simpl_gh_opts <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_remesh)  &&
+               (input$read_mesh_remesh == "Simplify") &&
+               (input$read_mesh_remesh_simpl_method == "GH")) {
+                tagList(radioButtons("read_mesh_remesh_simpl_policyGH",
+                                     "Garland-Heckbert policy",
+                                     list("Classic Plane"="CP",
+                                          "Classic Tri"="CT",
+                                          "Prob Plane"="PP",
+                                          "Prob Tri"="PT",
+                                          "Plane Line"="PL")))
             } else {
                 NULL
             }

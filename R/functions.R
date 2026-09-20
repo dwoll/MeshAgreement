@@ -12,58 +12,62 @@ get_name_elem <- function(x, pos=1L, sep=" <-> ") {
     }
 }
 
-remesh_mesh <- function(x, method=c("No", "Isotropic"), ...) {
-    method <- match.arg(tolower(method),
-                        choices=c("no", "isotropic"))
+remesh_mesh <- function(x, how=c("No", "Isotropic", "Simplify"), ...) {
+    how <- match.arg(tolower(how),
+                     choices=c("no", "isotropic", "simplify"))
 
-    ## arguments for remesh methods
+    ## arguments for remesh method
     args_remesh <- list(isotropic=c("TargetLen", "FeatureAngleDeg",
-                                    "MaxSurfDist", "iterations", "Adaptive"))
+                                    "MaxSurfDist", "iterations", "Adaptive"),
+                        simplify=c("method", "stopUeRatio", "stopUeCount", "policyGH"))
 
     dotsL     <- list(...)
-    dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
+    dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[how]]]
 
-    if(method == "isotropic") {
+    if(how == "isotropic") {
         x_rgl      <- toRGL(x)
         argL       <- c(list(x=x_rgl), dotsL_sub)
         mesh_rgl_r <- do.call(vcgIsotropicRemeshing, argL)
         makeMeshValid(mesh_rgl_r)
-    } else if(method == "no") {
+    } else if(how == "simplify") {
+        argL <- c(list(x=x), dotsL_sub)
+        do.call(remeshSimplify, argL)
+    } else if(how == "no") {
         x
     }
 }
 
-smooth_mesh <- function(x, method=c("No", "VCG", "CGAL"), ...) {
-    method <- match.arg(tolower(method),
-                        choices=c("no", "vcg", "cgal"))
+smooth_mesh <- function(x, how=c("No", "VCG", "CGAL"), ...) {
+    how <- match.arg(tolower(how),
+                     choices=c("no", "vcg", "cgal"))
 
     ## arguments for smoothing methods
     args_remesh <- list(vcg=c("type", "iteration", "lambda", "mu", "delta"),
                         cgal=c("nIter", "time"))
 
     dotsL     <- list(...)
-    dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[method]]]
+    dotsL_sub <- dotsL[names(dotsL) %in% args_remesh[[how]]]
 
-    if(method == "vcg") {
+    if(how == "vcg") {
         x_rgl      <- toRGL(x)
         argL       <- c(list(mesh=x_rgl), dotsL_sub)
         mesh_rgl_r <- do.call(vcgSmooth, argL)
         makeMeshValid(mesh_rgl_r)
-    } else if(method == "cgal") {
+    } else if(how == "cgal") {
         argL   <- c(list(x=x), dotsL_sub)
-        mesh_r <- do.call(smoothShape, argL)
-    } else if(method == "no") {
+        mesh_r <- do.call(remeshSmooth, argL)
+    } else if(how == "no") {
         x
     }
 }
 
 reconstruct_mesh <- function(x,
-                             method=c("No", "AFS", "SSS", "Poisson",
-                                      "Ball_Pivoting", "Alpha_Wrap"),
+                             how=c("No", "AFS", "SSS", "Poisson",
+                                   "Ball_Pivoting", "Alpha_Wrap"),
                              ...) {
-    method <- match.arg(tolower(method),
-                        choices=c("no", "afs", "sss", "poisson",
-                                  "ball_pivoting", "alpha_wrap"))
+    how <- match.arg(tolower(how),
+                     choices=c("no", "afs", "sss", "poisson",
+                               "ball_pivoting", "alpha_wrap"))
 
     ## arguments for reconstruction methods
     args_recon <- list(afs          =c("jetSmoothing"),
@@ -73,37 +77,39 @@ reconstruct_mesh <- function(x,
                        alpha_wrap   =c("alphaRel", "offsetRel"))
 
     dotsL     <- list(...)
-    dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[method]]]
+    dotsL_sub <- dotsL[names(dotsL) %in% args_recon[[how]]]
 
-    if(method == "afs") {
+    if(how == "afs") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         do.call(reconstructAFS, argL)
-    } else if(method == "sss") {
+    } else if(how == "sss") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         do.call(reconstructSSS, argL)
-    } else if(method == "poisson") {
+    } else if(how == "poisson") {
         normalsMethod <- dotsL_sub[["normalsMethod"]]
         if(!is.null(normalsMethod)) {
             pnm     <- tolower(normalsMethod)
             normals <- dotsL_sub[["normals"]]
             if(!is.null(normals) &&
                (pnm %in% c("jet", "pca"))) {
-                dotsL_sub[["normals"]] <- getNormalsFun(normals, method=pnm)
+                dotsL_sub[["normalsFun"]] <- getNormalsFun(normals, method=pnm)
             }
 
+            dotsL_sub[["normals"]]       <- NULL
             dotsL_sub[["normalsMethod"]] <- NULL
         }
 
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         do.call(reconstructPoisson, argL)
-    } else if(method == "ball_pivoting") {
+    } else if(how == "ball_pivoting") {
         x_rgl    <- toRGL(x)
         argL     <- c(list(x=x_rgl), dotsL_sub)
         mesh_rgl <- do.call("vcgBallPivoting", argL)
-    } else if(method == "alpha_wrap") {
+        makeMeshValid(mesh_rgl)
+    } else if(how == "alpha_wrap") {
         argL     <- c(list(x=x[["vertices"]]), dotsL_sub)
         do.call(alphaWrap, argL)
-    } else if(method == "no") {
+    } else if(how == "no") {
         x
     }
 }
@@ -114,17 +120,17 @@ read_mesh_one <- function(x,
                           reconstruct=c("No", "AFS", "SSS", "Poisson",
                                         "Ball_Pivoting", "Alpha_Wrap"),
                           smooth     =c("No", "VCG", "CGAL"),
-                          remesh     =c("No", "Isotropic"),
+                          remesh     =c("No", "Isotropic", "Simplify"),
                           ...) {
-    remesh <- match.arg(tolower(remesh),
-                        choices=c("no", "isotropic"))
+    reconstruct <- match.arg(tolower(reconstruct),
+                             choices=c("no", "afs", "sss", "poisson",
+                                       "ball_pivoting", "alpha_wrap"))
 
     smooth <- match.arg(tolower(smooth),
                         choices=c("no", "vcg", "cgal"))
 
-    reconstruct <- match.arg(tolower(reconstruct),
-                             choices=c("no", "afs", "sss", "poisson",
-                                       "ball_pivoting", "alpha_wrap"))
+    remesh <- match.arg(tolower(remesh),
+                        choices=c("no", "isotropic", "simplify"))
 
     ## collect arguments intended to be passed to other functions
     dotsL0 <- list(...)
@@ -158,7 +164,7 @@ read_mesh_one <- function(x,
                         dotsL[names(dotsL) %in% args_makeMesh])
 
     ## fixed max number of holes allowed
-    ## TODO expose this a choice in the shiny frontend
+    ## TODO expose this as an option in the shiny frontend
     if(!hasName(dotsL_makeMesh, "removeIntersections")) {
         dotsL_makeMesh$removeIntersections <- TRUE
     }
@@ -179,7 +185,7 @@ read_mesh_one <- function(x,
 
     ## reconstruct?
     mesh_r0 <- if(reconstruct != "no") {
-        argL <- c(list(x=mesh_in, method=reconstruct), dotsL)
+        argL <- c(list(x=mesh_in, how=reconstruct), dotsL)
         do.call(reconstruct_mesh, argL)
     } else {
         mesh_in
@@ -187,7 +193,7 @@ read_mesh_one <- function(x,
 
     ## smooth?
     mesh_r1 <- if(smooth != "no") {
-        argL <- c(list(x=mesh_r0, method=smooth), dotsL)
+        argL <- c(list(x=mesh_r0, how=smooth), dotsL)
         do.call(smooth_mesh, argL)
     } else {
         mesh_r0
@@ -195,7 +201,7 @@ read_mesh_one <- function(x,
 
     ## re-mesh?
     mesh_r2 <- if(remesh != "no") {
-        argL <- c(list(x=mesh_r1, method=remesh), dotsL)
+        argL <- c(list(x=mesh_r1, how=remesh), dotsL)
         do.call(remesh_mesh, argL)
     } else {
         mesh_r1
@@ -216,7 +222,7 @@ read_mesh_obs <- function(x,
                           reconstruct=c("No", "AFS", "SSS", "Poisson",
                                         "Ball_Pivoting", "Alpha_Wrap"),
                           smooth     =c("No", "VCG", "CGAL"),
-                          remesh     =c("No", "Isotropic"),
+                          remesh     =c("No", "Isotropic", "Simplify"),
                           ...) {
     reconstruct <- match.arg(tolower(reconstruct),
                              choices=c("no", "afs", "sss", "poisson",
@@ -226,7 +232,7 @@ read_mesh_obs <- function(x,
                         choices=c("no", "vcg", "cgal"))
 
     remesh <- match.arg(tolower(remesh),
-                        choices=c("no", "isotropic"))
+                        choices=c("no", "isotropic", "simplify"))
 
     mesh_names <- if(missing(name)) {
         basename(tools::file_path_sans_ext(x))
@@ -263,7 +269,7 @@ read_mesh <- function(x,
                         choices=c("no", "vcg", "cgal"))
 
     remesh <- match.arg(tolower(remesh),
-                        choices=c("no", "isotropic"))
+                        choices=c("no", "isotropic", "simplify"))
 
     dotsL <- list(...)
 

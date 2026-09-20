@@ -56,7 +56,9 @@ fluidPage(
                                          id="read_remesh_card",
                                          background="gray",
                                          collapsible=FALSE,
-                                         tagList(uiOutput("ui_remesh_iso_opts")))))
+                                         tagList(uiOutput("ui_remesh_iso_opts"),
+                                                 uiOutput("ui_remesh_simpl_opts"),
+                                                 uiOutput("ui_remesh_simpl_gh_opts")))))
             )
         )
     ),
