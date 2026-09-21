@@ -635,22 +635,42 @@ shiny::shinyApp(
             if((input$meshes_input_source == "file") &&
                !is.null(input$read_mesh_remesh)  &&
                (input$read_mesh_remesh == "Simplify")) {
-                tagList(radioButtons("read_mesh_remesh_simpl_method",
-                                     "Method",
-                                     list("Lindstrom-Turk ratio"="LT-R",
-                                          "Lindstrom-Turk count"="LT-C",
-                                          "Lindstrom-Turk bounded normal change filter"="LT-BNCF",
-                                          "Garland-Heckbert"="GH")),
-                        numericInput("read_mesh_remesh_simpl_ratio",
+                radioButtons("read_mesh_remesh_simpl_method",
+                             "Method",
+                             list("Lindstrom-Turk ratio"="LT-R",
+                                  "Lindstrom-Turk count"="LT-C",
+                                  "Lindstrom-Turk bounded normal change filter"="LT-BNCF",
+                                  "Garland-Heckbert"="GH"))
+            } else {
+                NULL
+            }
+        })
+        output$ui_remesh_simpl_ratio <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_remesh)  &&
+               (input$read_mesh_remesh == "Simplify") &&
+               !is.null(input$read_mesh_remesh_simpl_method) &&
+               (input$read_mesh_remesh_simpl_method %in% c("LT-R", "GH"))) {
+                numericInput("read_mesh_remesh_simpl_ratio",
                                      "Undirected edge ratio",
                                      min=0.001,
                                      value=0.5,
-                                     step=0.1),
-                        numericInput("read_mesh_remesh_simpl_count",
+                                     step=0.1)
+            } else {
+                NULL
+            }
+        })
+        output$ui_remesh_simpl_count <- renderUI({
+            if((input$meshes_input_source == "file") &&
+               !is.null(input$read_mesh_remesh)  &&
+               (input$read_mesh_remesh == "Simplify") &&
+               !is.null(input$read_mesh_remesh_simpl_method) &&
+               (input$read_mesh_remesh_simpl_method %in% c("LT-C", "LT-BNCF"))) {
+                numericInput("read_mesh_remesh_simpl_count",
                                      "Undirected edge count",
                                      min=1L,
                                      value=1L,
-                                     step=1L))
+                                     step=1L)
             } else {
                 NULL
             }
@@ -659,6 +679,7 @@ shiny::shinyApp(
             if((input$meshes_input_source == "file") &&
                !is.null(input$read_mesh_remesh)  &&
                (input$read_mesh_remesh == "Simplify") &&
+               !is.null(input$read_mesh_remesh_simpl_method) &&
                (input$read_mesh_remesh_simpl_method == "GH")) {
                 tagList(radioButtons("read_mesh_remesh_simpl_policyGH",
                                      "Garland-Heckbert policy",

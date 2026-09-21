@@ -58,6 +58,8 @@ fluidPage(
                                          collapsible=FALSE,
                                          tagList(uiOutput("ui_remesh_iso_opts"),
                                                  uiOutput("ui_remesh_simpl_opts"),
+                                                 uiOutput("ui_remesh_simpl_ratio"),
+                                                 uiOutput("ui_remesh_simpl_count"),
                                                  uiOutput("ui_remesh_simpl_gh_opts")))))
             )
         )
