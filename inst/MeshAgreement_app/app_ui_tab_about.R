@@ -13,8 +13,8 @@ fluidPage(
                     tags$ul(tags$li("DCOM: Distance between centers of mass"),
                             tags$li("ASD: Average symmetric surface distance"),
                             tags$li("RMSD: Root mean squared symmetric surface distance"),
-                            tags$li("HD_max: Hausdorff distance - worst case, maximum of both directed Hausdorff distances"),
-                            tags$li("HD_avg: Hausdorff distance - average, mean of both directed Hausdorff distances")),
+                            tags$li("HD: Hausdorff distance (symmetric, maximum of both directed Hausdorff distances)"),
+                            tags$li("HD95: 95% Quantile Hausdorff distance (symmetric)")),
                     tags$li("Volume-overlap based measures"),
                     tags$ul(tags$li("JSC: Jaccard similarity coefficient"),
                     tags$li("DSC: Dice similarity coefficient"))),
@@ -75,7 +75,7 @@ fluidPage(
                       " and ",
                       tags$a(href="https://github.com/dwoll/SurfaceMesh", "SurfaceMesh")),
               tags$li(tags$a(href="http://www.vcglib.net/",             "VCG Library"),
-                      " - used as a backend for Hausdorff distance calculations, isotropic remeshing, and ball pivoting surface reconstruction via R package",
+                      " - used as a backend for isotropic remeshing, ball pivoting surface reconstruction, and smoothing via R package",
                       tags$a(href="https://CRAN.R-project.org/package=Rvcg", "Rvcg")),
               tags$li(tags$a(href="www/Export3D.cs", "ESAPI script"), "to export 3D mesh files in PLY format from Varian Eclipse."))
         )
