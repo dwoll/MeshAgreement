@@ -2,25 +2,25 @@ Package: MeshAgreement
 Type: Package
 Title: Agreement Measures for 3D Meshes
 Version: 0.1.6
-Date: 2026-07-20
+Date: 2026-09-20
 Authors@R: c(person("Daniel", "Wollschlaeger", role=c("aut", "cre"), email="wollschlaeger@uni-mainz.de"),
     person("Heiko", "Karle", role="aut"))
-Depends: R (>= 3.5)
+Depends: R (>= 4.0.0)
 Imports: stats, Rvcg, SurfaceMesh
 Suggests: knitr, shiny, DT, bs4Dash, sortable, rgl
 VignetteBuilder: knitr
 LazyData: yes
 Description: Calculates distance-based and volume-overlap-based
-        agreement measures for triangular 3D meshes. These include
-        the Hausdorff distance, the average surface distance, the
-        Dice similarity coefficient, and the Jaccard similarity
-        coefficient as documented in Stockinger et al. (2021)
-        <doi:10.1186/s13014-021-01965-5>. Overall agreement for
-        a set of meshes is calculated as the aggregate agreement
-        for all pairwise comparisons. Based on algorithms
-        provided by the 'VCGLIB' <http://vcglib.net/>
-        and 'CGAL' <https://www.cgal.org/> libraries.
-        Includes web-based graphical user interface.
+    agreement measures for triangular 3D surface meshes.
+    Agreement metrics include the Hausdorff distance, the average
+    surface distance, the Dice similarity coefficient, and the
+    Jaccard similarity coefficient as documented in Stockinger et
+    al. (2021) <doi:10.1186/s13014-021-01965-5>.
+    Overall agreement for a set of meshes is calculated as the
+    aggregate agreement for all pairwise comparisons. Based on
+    algorithms provided by the 'VCGLIB' <http://vcglib.net/> and
+    'CGAL' <https://www.cgal.org/> libraries. Includes web-based
+    graphical user interface.
 License: GPL (>= 2)
 URL: https://github.com/dwoll/MeshAgreement/
 Config/roxygen2/version: 8.1.0
