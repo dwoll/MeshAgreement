@@ -55,7 +55,7 @@ smooth_mesh <- function(x, how=c("No", "VCG", "CGAL"), ...) {
         makeMeshValid(mesh_rgl_r)
     } else if(how == "cgal") {
         argL   <- c(list(x=x), dotsL_sub)
-        mesh_r <- do.call(remeshSmooth, argL)
+        mesh_r <- do.call(remeshSmoothShape, argL)
     } else if(how == "no") {
         x
     }

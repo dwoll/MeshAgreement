@@ -20,7 +20,7 @@ importFrom(SurfaceMesh,
            orientToBoundVolume,
            reconstructAFS, reconstructPoisson, reconstructSSS,
            remeshSimplify,
-           remeshSmooth,
+           remeshSmoothShape,
            removeSelfIntersections,
            toRGL,
            writeMeshFile)
